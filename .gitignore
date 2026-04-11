@@ -1,6 +1,5 @@
 # Backend
 backend/target/
-backend/src/main/resources/application.yml
 backend/src/main/resources/application.properties
 backend/.idea/
 
