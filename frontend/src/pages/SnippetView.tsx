@@ -50,7 +50,7 @@ export default function SnippetView() {
 
   useEffect(() => {
     const client = new Client({
-      webSocketFactory: () => new SockJS('/ws') as WebSocket,
+      webSocketFactory: () => new SockJS(`${import.meta.env.VITE_WS_URL}/ws`) as WebSocket,
       reconnectDelay: 5000,
       onConnect: () => {
         setConnected(true)
