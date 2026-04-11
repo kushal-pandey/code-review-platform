@@ -28,7 +28,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     api.get('/auth/me').then(res => setUser(res.data)).catch(() => navigate('/login'))
-    api.get('/snippets').then(res => setSnippets(res.data))
+    api.get('/snippets').then(res => setSnippets(Array.isArray(res.data) ? res.data : []))
   }, [navigate])
 
   const handleLogout = () => {
