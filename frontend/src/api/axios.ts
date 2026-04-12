@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'https://codereview-backend-4fp2.onrender.com/api',
+  baseURL: '/api',
 })
 
 api.interceptors.request.use((config) => {

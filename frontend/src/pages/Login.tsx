@@ -1,6 +1,6 @@
 export default function Login() {
   const handleLogin = () => {
-    window.location.href = `https://codereview-backend-4fp2.onrender.com/oauth2/authorization/github`;
+    window.location.href = `${import.meta.env.VITE_API_URL}/oauth2/authorization/github`;
   };
 
   return (
