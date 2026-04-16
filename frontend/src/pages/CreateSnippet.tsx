@@ -24,7 +24,7 @@ export default function CreateSnippet() {
   const navigate = useNavigate();
 
   const handleSubmit = async () => {
-    console.log("SENDING TO:", api.defaults.baseURL + "/snippets");
+    
     if (!title.trim() || !code.trim()) {
       alert("Please fill in the title and code.");
       return;
@@ -32,7 +32,7 @@ export default function CreateSnippet() {
     setLoading(true);
     try {
       // Add the /api prefix here to match your Backend @RequestMapping
-      const res = await api.post("/snippets", { title, code, language });
+      const res = await api.post("/api/snippets", { title, code, language });
       navigate(`/snippet/${res.data.id}`);
     } catch (err) {
       console.error("Publishing error details:", err); // Log the actual error for debugging
