@@ -29,18 +29,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        String userId = "Unknown"; // Move outside the try block
         try {
             String jwt = extractToken(request);
             if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
-                String userId = jwtTokenProvider.getUserIdFromToken(jwt);
+                userId = jwtTokenProvider.getUserIdFromToken(jwt);
+
                 UserDetails userDetails = userService.loadUserById(Long.parseLong(userId));
+
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
+
+                log.info("AUTH_SUCCESS: Authenticated user ID: {}", userId);
             }
         } catch (Exception ex) {
-            log.error("Could not set user authentication: {}", ex.getMessage());
+            log.error("AUTH_FAILURE: For User ID: {}. Error: {}", userId, ex.getMessage());
         }
         filterChain.doFilter(request, response);
     }
