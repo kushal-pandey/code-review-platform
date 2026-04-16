@@ -1,7 +1,13 @@
 import axios from 'axios'
 
+// Determine if we are on Vercel or Localhost
+const isProduction = window.location.hostname !== "localhost";
+const baseURL = isProduction 
+  ? "https://codereview-backend-4fp2.onrender.com" // Your exact Render URL
+  : (import.meta.env.VITE_API_URL || "http://localhost:8080");
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL,
 })
 
 api.interceptors.request.use((config) => {
@@ -15,19 +21,18 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // 1. Log the error so we can see WHICH call is failing
     console.error("Axios Error:", error.response?.status, error.config.url);
 
-    // 2. Only redirect if it's a 401 AND we aren't currently authenticating
     const isAuthPath = window.location.pathname.includes('/auth/callback');
     
+    // Check if it's a 401. 
+    // IMPORTANT: Re-enable the redirect logic once you've updated the baseURL above
     if (error.response?.status === 401 && !isAuthPath) {
-      console.warn("401 detected. NOT removing token yet for debugging.");
-       localStorage.removeItem('token'); // COMMENT THIS OUT TEMPORARILY
-       window.location.href = '/login';   // COMMENT THIS OUT TEMPORARILY
+       localStorage.removeItem('token'); 
+       window.location.href = '/login';   
     }
     return Promise.reject(error);
   }
 );
 
-export default api
+export default api;
