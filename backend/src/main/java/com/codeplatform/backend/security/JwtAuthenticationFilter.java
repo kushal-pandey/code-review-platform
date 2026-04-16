@@ -26,26 +26,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserService userService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
-        String userId = "Unknown"; // Move outside the try block
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
             String jwt = extractToken(request);
             if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
-                userId = jwtTokenProvider.getUserIdFromToken(jwt);
+                String userId = jwtTokenProvider.getUserIdFromToken(jwt);
 
+                // Failsafe: Prevent crash if the database wiped your user but GitHub remembers you
                 UserDetails userDetails = userService.loadUserById(Long.parseLong(userId));
-
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(auth);
-
-                log.info("AUTH_SUCCESS: Authenticated user ID: {}", userId);
+                if (userDetails != null) {
+                    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
             }
         } catch (Exception ex) {
-            log.error("AUTH_FAILURE: For User ID: {}. Error: {}", userId, ex.getMessage());
+            // This will print EXACTLY why the 401 is happening in your Render Logs
+            log.error("Authentication Blocked: {}", ex.getMessage());
+            SecurityContextHolder.clearContext();
         }
         filterChain.doFilter(request, response);
     }
