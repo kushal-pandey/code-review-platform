@@ -42,7 +42,7 @@ export default function Dashboard() {
 
     // 2. Add /api to the snippets call
     api
-      .get("/snippets")
+      .get("/api/snippets")
       .then((res) => setSnippets(Array.isArray(res.data) ? res.data : []))
       .catch((err) => console.error("Snippets failed:", err));
   }, []); // Empty dependency array is safer here

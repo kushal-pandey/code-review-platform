@@ -43,13 +43,13 @@ export default function SnippetView() {
   useEffect(() => {
     // 1. Check user (automatically becomes /api/auth/me)
     api
-      .get("/auth/me")
+      .get("/api/auth/me")
       .then((res) => setCurrentUser(res.data))
       .catch(() => navigate("/login"));
 
     // 2. Get snippet (automatically becomes /api/snippets/id)
     
-    api.get(`/snippets/${id}`).then((res) => {
+    api.get(`/api/snippets/${id}`).then((res) => {
       setSnippet(res.data);
       setComments(res.data.comments || []);
     });
