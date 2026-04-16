@@ -41,10 +41,14 @@ export default function SnippetView() {
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // 1. Check user (automatically becomes /api/auth/me)
     api
       .get("/auth/me")
       .then((res) => setCurrentUser(res.data))
       .catch(() => navigate("/login"));
+
+    // 2. Get snippet (automatically becomes /api/snippets/id)
+    
     api.get(`/snippets/${id}`).then((res) => {
       setSnippet(res.data);
       setComments(res.data.comments || []);
@@ -64,6 +68,13 @@ export default function SnippetView() {
             const exists = prev.some((c) => c.id === comment.id);
             return exists ? prev : [...prev, comment];
           });
+        });
+
+        client.subscribe("/user/queue/notifications", (message) => {
+          console.log("Notification:", message.body);
+
+          // simple UI (you can improve later)
+          alert(message.body);
         });
       },
       onDisconnect: () => setConnected(false),

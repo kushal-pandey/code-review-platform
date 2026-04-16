@@ -1,7 +1,8 @@
 export default function Login() {
   const handleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL}/oauth2/authorization/github`;
-  };
+  console.log("Login button clicked!");
+  window.location.assign("http://localhost:8080/oauth2/authorization/github");
+};
 
   return (
     <div

@@ -30,13 +30,23 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
+                // 1. Independent Exception Handling Block
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(401);
+                            response.getWriter().write("Unauthorized: Please provide a valid token.");
+                        })
+                )
+                // 2. Independent Authorization Block
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/oauth2/**", "/login/**", "/ws/**").permitAll()
+                        .requestMatchers("/oauth2/**", "/login/**", "/ws/**", "/api/auth/**").permitAll()
                         .anyRequest().authenticated()
                 )
+                // 3. OAuth2 Login Block
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2SuccessHandler)
                 )
+                // 4. JWT Filter placement
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
