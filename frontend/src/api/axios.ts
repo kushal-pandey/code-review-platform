@@ -28,8 +28,8 @@ api.interceptors.response.use(
     // Check if it's a 401. 
     // IMPORTANT: Re-enable the redirect logic once you've updated the baseURL above
     if (error.response?.status === 401 && !isAuthPath) {
-       //localStorage.removeItem('token'); 
-       //window.location.href = '/login';   
+       localStorage.removeItem('token'); 
+       window.location.href = '/login';   
     }
     return Promise.reject(error);
   }
