@@ -1,8 +1,17 @@
 export default function Login() {
   const handleLogin = () => {
-  console.log("Login button clicked!");
-  window.location.assign("http://localhost:8080/oauth2/authorization/github");
-};
+    // If the URL in the browser bar isn't localhost, we are in production
+    const isProduction = window.location.hostname !== "localhost";
+
+    // Use Render for production, Localhost for dev
+    // REPLACE the URL below with your actual Render backend URL
+    const backendUrl = isProduction
+      ? "https://codereview-backend-4fp2.onrender.com"
+      : import.meta.env.VITE_API_URL || "http://localhost:8080";
+
+    console.log("Redirecting to Backend Auth:", backendUrl);
+    window.location.href = `${backendUrl}/oauth2/authorization/github`;
+  };
 
   return (
     <div
