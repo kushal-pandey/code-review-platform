@@ -32,4 +32,8 @@ public class SnippetService {
                 .build();
         return snippetRepository.save(snippet);
     }
+
+    public void deleteSnippet(Long id) {
+        snippetRepository.deleteById(id);
+    }
 }

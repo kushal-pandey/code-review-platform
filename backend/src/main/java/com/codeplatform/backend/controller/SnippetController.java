@@ -44,4 +44,24 @@ public class SnippetController {
         );
         return ResponseEntity.ok(snippet);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteSnippet(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        Long currentUserId = Long.parseLong(userDetails.getUsername());
+
+        // 1. Fetch the snippet first to check ownership
+        CodeSnippet snippet = snippetService.getSnippetById(id);
+
+        // 2. Security Check: Does the logged-in user own this snippet?
+        if (!snippet.getAuthor().getId().equals(currentUserId)) {
+            return ResponseEntity.status(403).body("You can only delete your own snippets.");
+        }
+
+        // 3. If they own it, delete it
+        snippetService.deleteSnippet(id);
+        return ResponseEntity.ok().build();
+    }
 }

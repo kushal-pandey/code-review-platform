@@ -48,7 +48,7 @@ export default function SnippetView() {
       .catch(() => navigate("/login"));
 
     // 2. Get snippet (automatically becomes /api/snippets/id)
-    
+
     api.get(`/api/snippets/${id}`).then((res) => {
       setSnippet(res.data);
       setComments(res.data.comments || []);
@@ -107,6 +107,26 @@ export default function SnippetView() {
     });
     setNewComment("");
     setLineNumber("");
+  };
+
+  const handleDelete = async () => {
+    // Always use a confirmation dialog so users don't accidentally click it!
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this snippet? This cannot be undone.",
+      )
+    ) {
+      return;
+    }
+
+    try {
+      // Remember the /api prefix!
+      await api.delete(`/api/snippets/${id}`);
+      navigate("/"); // Send them back to the dashboard after deletion
+    } catch (err) {
+      console.error("Failed to delete snippet:", err);
+      alert("Could not delete the snippet. Make sure you are the author.");
+    }
   };
 
   if (!snippet) {
@@ -171,6 +191,24 @@ export default function SnippetView() {
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {/* ONLY show this button if the current user ID matches the snippet author's ID */}
+          {currentUser?.id === snippet.author?.id && (
+            <button
+              onClick={handleDelete}
+              style={{
+                background: "transparent",
+                color: "#f85149",
+                border: "1px solid #f85149",
+                padding: "4px 12px",
+                borderRadius: "6px",
+                fontSize: "0.75rem",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              🗑️ Delete
+            </button>
+          )}
           <span
             style={{
               background: "#1f6feb",
