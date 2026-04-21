@@ -142,7 +142,7 @@ code-review-platform/
 │       │   └── WebSocketConfig.java      # STOMP broker, endpoint registration
 │       ├── controller/
 │       │   ├── AuthController.java       # GET /api/auth/me
-│       │   ├── SnippetController.java    # GET/POST /api/snippets
+│       │   ├── SnippetController.java    # GET/POST/DELETE /api/snippets
 │       │   └── CommentController.java    # WebSocket @MessageMapping
 │       ├── model/
 │       │   ├── User.java
