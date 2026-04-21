@@ -64,4 +64,20 @@ public class SnippetController {
         snippetService.deleteSnippet(id);
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/batch")
+    public ResponseEntity<?> deleteBulkSnippets(
+            @RequestParam List<Long> ids,
+            @AuthenticationPrincipal UserDetails userDetails){
+
+        Long currentUserId = Long.parseLong(userDetails.getUsername());
+
+        try{
+            snippetService.deleteSnippetsBulk(ids, currentUserId);
+            return ResponseEntity.ok().build();
+        } catch (Exception e){
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
+
 }

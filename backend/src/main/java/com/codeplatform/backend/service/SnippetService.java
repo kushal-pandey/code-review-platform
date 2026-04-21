@@ -5,6 +5,7 @@ import com.codeplatform.backend.model.User;
 import com.codeplatform.backend.repository.SnippetRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -36,4 +37,16 @@ public class SnippetService {
     public void deleteSnippet(Long id) {
         snippetRepository.deleteById(id);
     }
+
+    @Transactional
+    public void deleteSnippetsBulk(List<Long> ids, Long currentUserId){
+        List<CodeSnippet> snippets = snippetRepository.findAllById(ids);
+        for(CodeSnippet snippet : snippets){
+            if(!snippet.getAuthor().getId().equals(currentUserId)){
+                throw new RuntimeException("Unauthorized: You can only delete your own snippets");
+            }
+        }
+        snippetRepository.deleteAll();
+    }
+
 }

@@ -30,6 +30,11 @@ export default function Dashboard() {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const mySnippets = snippets.filter(
+    (s) => s.author.username === user?.username,
+  );
 
   useEffect(() => {
     // 1. Add /api to the auth call
@@ -50,6 +55,45 @@ export default function Dashboard() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
+  };
+
+  const handleToggleSelect = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((selectedIds) => selectedIds !== id)
+        : [...prev, id],
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === mySnippets.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(mySnippets.map((s) => s.id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete ${selectedIds.length} snippet(s)?`,
+      )
+    )
+      return;
+
+    setIsDeleting(true);
+    try {
+      await api.delete(`/api/snippets/batch?ids=${selectedIds.join(",")}`);
+
+      setSnippets((prev) => prev.filter((s) => !selectedIds.includes(s.id)));
+      setSelectedIds([]);
+    } catch (err) {
+      console.error("Bulk delete failed:", err);
+      alert("Failed to delete snippets.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -124,9 +168,59 @@ export default function Dashboard() {
       <div
         style={{ maxWidth: "860px", margin: "32px auto", padding: "0 24px" }}
       >
-        <h3 style={{ color: "#8b949e", fontWeight: 400, marginBottom: "20px" }}>
-          {snippets.length} code snippet{snippets.length !== 1 ? "s" : ""}
-        </h3>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "20px",
+          }}
+        >
+          <h3 style={{ color: "#8b949e", fontWeight: 400, margin: 0 }}>
+            {snippets.length} code snippet{snippets.length !== 1 ? "s" : ""}
+          </h3>
+
+          {/* Only show bulk actions if the user actually has snippets they own */}
+          {mySnippets.length > 0 && (
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              <button
+                onClick={handleSelectAll}
+                style={{
+                  background: "transparent",
+                  color: "#58a6ff",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "0.9rem",
+                }}
+              >
+                {selectedIds.length === mySnippets.length
+                  ? "Deselect All"
+                  : "Select All My Snippets"}
+              </button>
+
+              {selectedIds.length > 0 && (
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={isDeleting}
+                  style={{
+                    background: "#da3633",
+                    color: "white",
+                    border: "none",
+                    padding: "6px 12px",
+                    borderRadius: "6px",
+                    cursor: isDeleting ? "not-allowed" : "pointer",
+                    fontWeight: 600,
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  {isDeleting
+                    ? "Deleting..."
+                    : `Delete Selected (${selectedIds.length})`}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
 
         {snippets.length === 0 && (
           <div
@@ -173,9 +267,29 @@ export default function Dashboard() {
                 alignItems: "center",
               }}
             >
-              <h4 style={{ margin: 0, color: "#e6edf3", fontSize: "1rem" }}>
-                {snippet.title}
-              </h4>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "12px" }}
+              >
+                {/* Checkbox: Only visible if the logged-in user owns this snippet */}
+                {user?.username === snippet.author.username && (
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(snippet.id)}
+                    onClick={(e) => handleToggleSelect(snippet.id, e)}
+                    style={{
+                      cursor: "pointer",
+                      width: "16px",
+                      height: "16px",
+                      accentColor: "#da3633",
+                    }}
+                  />
+                )}
+                <h4 style={{ margin: 0, color: "#e6edf3", fontSize: "1rem" }}>
+                  {snippet.title}
+                </h4>
+              </div>
+
+              {/* Your existing language tag span goes right here... */}
               <span
                 style={{
                   background: LANG_COLORS[snippet.language] || "#6e7681",
