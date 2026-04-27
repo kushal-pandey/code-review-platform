@@ -12,11 +12,13 @@ interface User {
 }
 
 interface Comment {
-  id: number;
+  id?: number;
   content: string;
   lineNumber?: number;
-  author: User;
-  createdAt: string;
+  author?: User;
+  createdAt?: string;
+  isAi?: boolean;       
+  sender?: string;
 }
 
 interface Snippet {
