@@ -57,14 +57,6 @@ export default function Dashboard() {
     navigate("/login");
   };
 
-  const handleToggleSelect = (id: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedIds((prev) =>
-      prev.includes(id)
-        ? prev.filter((selectedIds) => selectedIds !== id)
-        : [...prev, id],
-    );
-  };
 
   const handleSelectAll = () => {
     if (selectedIds.length === mySnippets.length) {
