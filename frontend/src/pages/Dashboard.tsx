@@ -275,7 +275,18 @@ export default function Dashboard() {
                   <input
                     type="checkbox"
                     checked={selectedIds.includes(snippet.id)}
-                    onClick={(e) => handleToggleSelect(snippet.id, e)}
+                    // 1. Use onChange to satisfy React
+                    onChange={() => {
+                      setSelectedIds((prev) =>
+                        prev.includes(snippet.id)
+                          ? prev.filter(
+                              (selectedId) => selectedId !== snippet.id,
+                            )
+                          : [...prev, snippet.id],
+                      );
+                    }}
+                    // 2. Keep onClick just to stop the card from opening
+                    onClick={(e) => e.stopPropagation()}
                     style={{
                       cursor: "pointer",
                       width: "16px",

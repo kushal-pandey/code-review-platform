@@ -2,6 +2,7 @@ package com.codeplatform.backend.controller;
 
 import com.codeplatform.backend.model.CodeSnippet;
 import com.codeplatform.backend.model.User;
+import com.codeplatform.backend.service.AiReviewService;
 import com.codeplatform.backend.service.SnippetService;
 import com.codeplatform.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,9 @@ public class SnippetController {
 
     private final SnippetService snippetService;
     private final UserService userService;
+    private final AiReviewService aiReviewService;
+
+
 
     @GetMapping
     public ResponseEntity<List<CodeSnippet>> getAllSnippets() {
@@ -78,6 +82,20 @@ public class SnippetController {
         } catch (Exception e){
             return ResponseEntity.status(403).body(e.getMessage());
         }
+    }
+
+    @PostMapping("/{id}/review")
+    public ResponseEntity<?> requestAiReview(@PathVariable Long id) {
+        // 1. Fetch the snippet from the database
+        CodeSnippet snippet = snippetService.getSnippetById(id);
+
+        // 2. Trigger the AI in the background!
+        // Because of the @Async annotation, this method returns instantly
+        // while the AI does its thinking on a separate thread.
+        aiReviewService.generateReview(id, snippet.getCode(), snippet.getLanguage());
+
+        // 3. Return a 202 Accepted (Standard HTTP code for "I got the request and am processing it")
+        return ResponseEntity.accepted().build();
     }
 
 }

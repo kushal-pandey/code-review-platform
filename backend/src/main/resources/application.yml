@@ -24,3 +24,7 @@ app:
 
 server:
   port: ${PORT:8080}
+
+gemini:
+  api:
+    key: "AIzaSyCakCIETV-kPUhi_XH5X2737zcAj6vzJCs"

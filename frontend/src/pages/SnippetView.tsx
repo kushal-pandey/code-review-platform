@@ -39,6 +39,7 @@ export default function SnippetView() {
   const [connected, setConnected] = useState(false);
   const stompClientRef = useRef<Client | null>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
+  const [isRequestingAi, setIsRequestingAi] = useState(false);
 
   useEffect(() => {
     // 1. Check user (automatically becomes /api/auth/me)
@@ -62,7 +63,7 @@ export default function SnippetView() {
       reconnectDelay: 5000,
       onConnect: () => {
         setConnected(true);
-        client.subscribe(`/topic/snippet/${id}`, (message) => {
+        client.subscribe(`/topic/snippets/${id}`, (message) => {
           const comment: Comment = JSON.parse(message.body);
           setComments((prev) => {
             const exists = prev.some((c) => c.id === comment.id);
@@ -129,6 +130,22 @@ export default function SnippetView() {
     }
   };
 
+  const handleAskAi = async () => {
+    setIsRequestingAi(true);
+    try {
+      // 1. Send the POST request to our new endpoint
+      await api.post(`/api/snippets/${id}/review`);
+
+      // 2. We don't need to wait for the response! The WebSocket will take over.
+      // We just disable the button for a few seconds to prevent spam clicks.
+      setTimeout(() => setIsRequestingAi(false), 5000);
+    } catch (err) {
+      console.error("Failed to request AI review:", err);
+      alert("Could not wake up the AI.");
+      setIsRequestingAi(false);
+    }
+  };
+
   if (!snippet) {
     return (
       <div
@@ -191,6 +208,23 @@ export default function SnippetView() {
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {/* NEW: The AI Review Button */}
+          <button
+            onClick={handleAskAi}
+            disabled={isRequestingAi}
+            style={{
+              background: "transparent",
+              color: isRequestingAi ? "#8b949e" : "#a371f7", // Grays out when clicked
+              border: `1px solid ${isRequestingAi ? "#8b949e" : "#a371f7"}`,
+              padding: "4px 12px",
+              borderRadius: "6px",
+              fontSize: "0.75rem",
+              cursor: isRequestingAi ? "wait" : "pointer",
+              fontWeight: 600,
+            }}
+          >
+            {isRequestingAi ? "✨ Waking AI..." : "✨ Ask AI to Review"}
+          </button>
           {/* ONLY show this button if the current user ID matches the snippet author's ID */}
           {currentUser?.id === snippet.author?.id && (
             <button
@@ -309,15 +343,20 @@ export default function SnippetView() {
               </div>
             )}
 
-            {comments.map((comment) => (
+            {comments.map((comment, index) => (
               <div
-                key={comment.id}
+                // 1. Fallback key because the AI message doesn't have a database ID yet
+                key={comment.id || `ai-msg-${index}`}
                 style={{
-                  background: "#0d1117",
+                  // 2. Distinct dark-purple background if it's the AI
+                  background: comment.isAi ? "#160f24" : "#0d1117",
                   borderRadius: "8px",
                   padding: "12px 14px",
                   marginBottom: "10px",
-                  border: "1px solid #30363d",
+                  // 3. Purple border for AI, standard gray for humans
+                  border: comment.isAi
+                    ? "1px solid #a371f7"
+                    : "1px solid #30363d",
                 }}
               >
                 <div
@@ -328,7 +367,8 @@ export default function SnippetView() {
                     marginBottom: "8px",
                   }}
                 >
-                  {comment.author?.avatarUrl && (
+                  {/* 4. Only render the avatar if it's NOT the AI */}
+                  {!comment.isAi && comment.author?.avatarUrl && (
                     <img
                       src={comment.author.avatarUrl}
                       alt=""
@@ -340,16 +380,20 @@ export default function SnippetView() {
                       }}
                     />
                   )}
+
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <span
                       style={{
                         fontWeight: 600,
                         fontSize: "0.85rem",
-                        color: "#e6edf3",
+                        // 5. Purple name for the AI
+                        color: comment.isAi ? "#a371f7" : "#e6edf3",
                       }}
                     >
-                      {comment.author?.username}
+                      {/* 6. Intelligently pick the name */}
+                      {comment.isAi ? comment.sender : comment.author?.username}
                     </span>
+
                     {comment.lineNumber && (
                       <span
                         style={{
@@ -366,6 +410,7 @@ export default function SnippetView() {
                       </span>
                     )}
                   </div>
+
                   <span
                     style={{
                       color: "#8b949e",
@@ -373,12 +418,19 @@ export default function SnippetView() {
                       flexShrink: 0,
                     }}
                   >
-                    {new Date(comment.createdAt).toLocaleTimeString("en-US", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {/* 7. SAFE TIMESTAMP: If AI, say "Just now". If human, format the Date. */}
+                    {comment.createdAt
+                      ? new Date(comment.createdAt).toLocaleTimeString(
+                          "en-US",
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          },
+                        )
+                      : "Just now"}
                   </span>
                 </div>
+
                 <p
                   style={{
                     margin: 0,
@@ -386,6 +438,8 @@ export default function SnippetView() {
                     color: "#c9d1d9",
                     lineHeight: 1.5,
                     wordBreak: "break-word",
+                    // 8. Crucial: pre-wrap ensures the AI's markdown line breaks format correctly!
+                    whiteSpace: "pre-wrap",
                   }}
                 >
                   {comment.content}
