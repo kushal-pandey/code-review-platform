@@ -32,6 +32,11 @@ public class Comment {
 
     private Integer lineNumber;
 
+    @Builder.Default
+    private Boolean isAi = false;
+
+    private String sender;
+
     @Column(updatable = false)
     private LocalDateTime createdAt;
 

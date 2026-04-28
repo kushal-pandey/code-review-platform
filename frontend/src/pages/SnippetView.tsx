@@ -2,96 +2,80 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import { Client } from "@stomp/stompjs";
-import SockJS from "sockjs-client/dist/sockjs";
 import api from "../api/axios";
+import SockJS from "sockjs-client/dist/sockjs";
+// ✅ This tells TypeScript these are JUST types
 
-interface User {
-  id: number;
-  username: string;
-  avatarUrl: string;
-}
-
-interface Comment {
-  id?: number;
-  content: string;
-  lineNumber?: number;
-  author?: User;
-  createdAt?: string;
-  isAi?: boolean;       
-  sender?: string;
-}
-
-interface Snippet {
-  id: number;
-  title: string;
-  code: string;
-  language: string;
-  author: User;
-  comments: Comment[];
-}
+// Import your new components
+import SnippetHeader from "../components/SnippetHeader";
+import CommentList from "../components/CommentList";
+import CommentInput from "../components/CommentInput";
 
 export default function SnippetView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [snippet, setSnippet] = useState<Snippet | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [snippet, setSnippet] = useState<any>(null);
+  const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [lineNumber, setLineNumber] = useState<string>("");
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [connected, setConnected] = useState(false);
+  const [isRequestingAi, setIsRequestingAi] = useState(false);
   const stompClientRef = useRef<Client | null>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
-  const [isRequestingAi, setIsRequestingAi] = useState(false);
 
+  // Keep your useEffects and Handlers (Logic) here for now
   useEffect(() => {
-    // 1. Check user (automatically becomes /api/auth/me)
-    api
-      .get("/api/auth/me")
-      .then((res) => setCurrentUser(res.data))
-      .catch(() => navigate("/login"));
+    const initializePage = async () => {
+      try {
+        // 🚀 This fires both requests at the exact same time
+        const [userRes, snippetRes] = await Promise.all([
+          api.get("/api/auth/me"),
+          api.get(`/api/snippets/${id}`),
+        ]);
 
-    // 2. Get snippet (automatically becomes /api/snippets/id)
+        setCurrentUser(userRes.data);
+        setSnippet(snippetRes.data);
+        setComments(snippetRes.data.comments || []);
+      } catch (err) {
+        console.error("Initialization failed:", err);
+        navigate("/login");
+      }
+    };
 
-    api.get(`/api/snippets/${id}`).then((res) => {
-      setSnippet(res.data);
-      setComments(res.data.comments || []);
-    });
+    initializePage();
   }, [id, navigate]);
 
   useEffect(() => {
     const client = new Client({
       webSocketFactory: () =>
         new SockJS(`${import.meta.env.VITE_WS_URL}/ws`) as WebSocket,
-      reconnectDelay: 5000,
       onConnect: () => {
-        setConnected(true);
-        client.subscribe(`/topic/snippets/${id}`, (message) => {
-          const comment: Comment = JSON.parse(message.body);
+        setConnected(true); // ✅ This removes the yellow underline!
+        client.subscribe(`/topic/snippets/${id}`, (msg) => {
+          const comment = JSON.parse(msg.body);
           setComments((prev) => {
-            const exists = prev.some((c) => c.id === comment.id);
-            return exists ? prev : [...prev, comment];
+            if (comment.id && prev.some((c) => c.id === comment.id))
+              return prev;
+            if (!comment.id && prev.some((c) => c.content === comment.content))
+              return prev;
+            return [...prev, comment];
           });
-        });
-
-        client.subscribe("/user/queue/notifications", (message) => {
-          console.log("Notification:", message.body);
-
-          // simple UI (you can improve later)
-          alert(message.body);
+          if (comment.isAi && !comment.content.includes("Analyzing")) {
+            setIsRequestingAi(false);
+          }
         });
       },
       onDisconnect: () => setConnected(false),
     });
+
     client.activate();
     stompClientRef.current = client;
+
     return () => {
       client.deactivate();
     };
   }, [id]);
-
-  useEffect(() => {
-    commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [comments]);
 
   const handleSendComment = () => {
     if (
@@ -100,6 +84,7 @@ export default function SnippetView() {
       !stompClientRef.current?.connected
     )
       return;
+
     stompClientRef.current.publish({
       destination: `/app/comment/${id}`,
       body: JSON.stringify({
@@ -112,58 +97,35 @@ export default function SnippetView() {
     setLineNumber("");
   };
 
-  const handleDelete = async () => {
-    // Always use a confirmation dialog so users don't accidentally click it!
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this snippet? This cannot be undone.",
-      )
-    ) {
-      return;
-    }
-
-    try {
-      // Remember the /api prefix!
-      await api.delete(`/api/snippets/${id}`);
-      navigate("/"); // Send them back to the dashboard after deletion
-    } catch (err) {
-      console.error("Failed to delete snippet:", err);
-      alert("Could not delete the snippet. Make sure you are the author.");
-    }
-  };
-
-  const handleAskAi = async () => {
+  const handleAskAi = async (retryCount = 0) => {
     setIsRequestingAi(true);
     try {
-      // 1. Send the POST request to our new endpoint
       await api.post(`/api/snippets/${id}/review`);
-
-      // 2. We don't need to wait for the response! The WebSocket will take over.
-      // We just disable the button for a few seconds to prevent spam clicks.
-      setTimeout(() => setIsRequestingAi(false), 5000);
-    } catch (err) {
-      console.error("Failed to request AI review:", err);
-      alert("Could not wake up the AI.");
+    } catch (err: any) {
+      if (err.response?.status === 503 && retryCount < 1) {
+        setTimeout(() => handleAskAi(retryCount + 1), 2000);
+        return;
+      }
       setIsRequestingAi(false);
     }
   };
 
-  if (!snippet) {
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure?")) return;
+    try {
+      await api.delete(`/api/snippets/${id}`);
+      navigate("/");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (!snippet)
     return (
-      <div
-        style={{
-          color: "#e6edf3",
-          textAlign: "center",
-          marginTop: 100,
-          background: "#0d1117",
-          height: "100vh",
-        }}
-      >
-        <div style={{ fontSize: "2rem" }}>⏳</div>
-        <p style={{ marginTop: 12, color: "#8b949e" }}>Loading snippet...</p>
+      <div style={{ color: "white", textAlign: "center", marginTop: 100 }}>
+        Loading...
       </div>
     );
-  }
 
   return (
     <div
@@ -172,124 +134,28 @@ export default function SnippetView() {
         height: "100vh",
         display: "flex",
         flexDirection: "column",
-        color: "#e6edf3",
       }}
     >
-      {/* Navbar */}
-      <nav
-        style={{
-          background: "#161b22",
-          padding: "0 24px",
-          height: "60px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: "1px solid #30363d",
-          flexShrink: 0,
-        }}
-      >
-        <h2
-          style={{
-            margin: 0,
-            color: "#58a6ff",
-            cursor: "pointer",
-            fontSize: "1.1rem",
-          }}
-          onClick={() => navigate("/")}
-        >
-          ← CodeReview
-        </h2>
-        <div style={{ textAlign: "center" }}>
-          <span style={{ color: "#e6edf3", fontWeight: 600 }}>
-            {snippet.title}
-          </span>
-          <span
-            style={{ color: "#8b949e", fontSize: "0.8rem", display: "block" }}
-          >
-            by {snippet.author?.username}
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          {/* NEW: The AI Review Button */}
-          <button
-            onClick={handleAskAi}
-            disabled={isRequestingAi}
-            style={{
-              background: "transparent",
-              color: isRequestingAi ? "#8b949e" : "#a371f7", // Grays out when clicked
-              border: `1px solid ${isRequestingAi ? "#8b949e" : "#a371f7"}`,
-              padding: "4px 12px",
-              borderRadius: "6px",
-              fontSize: "0.75rem",
-              cursor: isRequestingAi ? "wait" : "pointer",
-              fontWeight: 600,
-            }}
-          >
-            {isRequestingAi ? "✨ Waking AI..." : "✨ Ask AI to Review"}
-          </button>
-          {/* ONLY show this button if the current user ID matches the snippet author's ID */}
-          {currentUser?.id === snippet.author?.id && (
-            <button
-              onClick={handleDelete}
-              style={{
-                background: "transparent",
-                color: "#f85149",
-                border: "1px solid #f85149",
-                padding: "4px 12px",
-                borderRadius: "6px",
-                fontSize: "0.75rem",
-                cursor: "pointer",
-                fontWeight: 600,
-              }}
-            >
-              🗑️ Delete
-            </button>
-          )}
-          <span
-            style={{
-              background: "#1f6feb",
-              padding: "4px 12px",
-              borderRadius: "20px",
-              fontSize: "0.75rem",
-              fontWeight: 700,
-              textTransform: "uppercase",
-            }}
-          >
-            {snippet.language}
-          </span>
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: connected ? "#2ea043" : "#f85149",
-              display: "inline-block",
-            }}
-            title={connected ? "Live" : "Reconnecting..."}
-          />
-        </div>
-      </nav>
+      <SnippetHeader
+        snippet={snippet}
+        connected={connected}
+        isRequestingAi={isRequestingAi}
+        currentUser={currentUser}
+        onAskAi={() => handleAskAi()}
+        onDelete={handleDelete}
+      />
 
-      {/* Main Content */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        {/* Code Editor (read-only) */}
-        <div style={{ flex: 1, overflow: "hidden" }}>
+        <div style={{ flex: 1 }}>
           <Editor
             height="100%"
             language={snippet.language}
             value={snippet.code}
             theme="vs-dark"
-            options={{
-              fontSize: 14,
-              readOnly: true,
-              minimap: { enabled: true },
-              scrollBeyondLastLine: false,
-              padding: { top: 16 },
-            }}
+            options={{ readOnly: true }}
           />
         </div>
 
-        {/* Comment Panel */}
         <div
           style={{
             width: "360px",
@@ -297,250 +163,17 @@ export default function SnippetView() {
             flexDirection: "column",
             background: "#161b22",
             borderLeft: "1px solid #30363d",
-            flexShrink: 0,
           }}
         >
-          {/* Panel Header */}
-          <div
-            style={{
-              padding: "16px 20px",
-              borderBottom: "1px solid #30363d",
-              flexShrink: 0,
-            }}
-          >
-            <h4 style={{ margin: 0, color: "#e6edf3" }}>
-              💬 Discussion
-              <span
-                style={{
-                  marginLeft: 8,
-                  background: "#30363d",
-                  color: "#8b949e",
-                  padding: "2px 8px",
-                  borderRadius: "10px",
-                  fontSize: "0.75rem",
-                  fontWeight: 400,
-                }}
-              >
-                {comments.length}
-              </span>
-            </h4>
-          </div>
-
-          {/* Comments List */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
-            {comments.length === 0 && (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "40px 20px",
-                  color: "#8b949e",
-                }}
-              >
-                <div style={{ fontSize: "2rem", marginBottom: 8 }}>💬</div>
-                <p style={{ fontSize: "0.875rem" }}>
-                  No comments yet.
-                  <br />
-                  Start the code review!
-                </p>
-              </div>
-            )}
-
-            {comments.map((comment, index) => (
-              <div
-                // 1. Fallback key because the AI message doesn't have a database ID yet
-                key={comment.id || `ai-msg-${index}`}
-                style={{
-                  // 2. Distinct dark-purple background if it's the AI
-                  background: comment.isAi ? "#160f24" : "#0d1117",
-                  borderRadius: "8px",
-                  padding: "12px 14px",
-                  marginBottom: "10px",
-                  // 3. Purple border for AI, standard gray for humans
-                  border: comment.isAi
-                    ? "1px solid #a371f7"
-                    : "1px solid #30363d",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    marginBottom: "8px",
-                  }}
-                >
-                  {/* 4. Only render the avatar if it's NOT the AI */}
-                  {!comment.isAi && comment.author?.avatarUrl && (
-                    <img
-                      src={comment.author.avatarUrl}
-                      alt=""
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: "50%",
-                        flexShrink: 0,
-                      }}
-                    />
-                  )}
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <span
-                      style={{
-                        fontWeight: 600,
-                        fontSize: "0.85rem",
-                        // 5. Purple name for the AI
-                        color: comment.isAi ? "#a371f7" : "#e6edf3",
-                      }}
-                    >
-                      {/* 6. Intelligently pick the name */}
-                      {comment.isAi ? comment.sender : comment.author?.username}
-                    </span>
-
-                    {comment.lineNumber && (
-                      <span
-                        style={{
-                          marginLeft: 8,
-                          background: "#1f6feb22",
-                          color: "#58a6ff",
-                          padding: "1px 6px",
-                          borderRadius: "4px",
-                          fontSize: "0.7rem",
-                          border: "1px solid #1f6feb44",
-                        }}
-                      >
-                        Line {comment.lineNumber}
-                      </span>
-                    )}
-                  </div>
-
-                  <span
-                    style={{
-                      color: "#8b949e",
-                      fontSize: "0.7rem",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {/* 7. SAFE TIMESTAMP: If AI, say "Just now". If human, format the Date. */}
-                    {comment.createdAt
-                      ? new Date(comment.createdAt).toLocaleTimeString(
-                          "en-US",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          },
-                        )
-                      : "Just now"}
-                  </span>
-                </div>
-
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "0.875rem",
-                    color: "#c9d1d9",
-                    lineHeight: 1.5,
-                    wordBreak: "break-word",
-                    // 8. Crucial: pre-wrap ensures the AI's markdown line breaks format correctly!
-                    whiteSpace: "pre-wrap",
-                  }}
-                >
-                  {comment.content}
-                </p>
-              </div>
-            ))}
-            <div ref={commentsEndRef} />
-          </div>
-
-          {/* Comment Input */}
-          <div
-            style={{
-              padding: "14px",
-              borderTop: "1px solid #30363d",
-              flexShrink: 0,
-            }}
-          >
-            <input
-              type="number"
-              value={lineNumber}
-              onChange={(e) => setLineNumber(e.target.value)}
-              placeholder="Line number (optional)"
-              min={1}
-              style={{
-                width: "100%",
-                background: "#0d1117",
-                border: "1px solid #30363d",
-                borderRadius: "6px",
-                padding: "8px 12px",
-                color: "#e6edf3",
-                marginBottom: "8px",
-                fontSize: "0.875rem",
-                outline: "none",
-                boxSizing: "border-box",
-              }}
-            />
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Write a comment... (Ctrl+Enter to send)"
-              rows={3}
-              style={{
-                width: "100%",
-                background: "#0d1117",
-                border: "1px solid #30363d",
-                borderRadius: "6px",
-                padding: "10px 12px",
-                color: "#e6edf3",
-                resize: "none",
-                marginBottom: "8px",
-                fontSize: "0.875rem",
-                outline: "none",
-                fontFamily: "inherit",
-                lineHeight: 1.5,
-                boxSizing: "border-box",
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = "#58a6ff")}
-              onBlur={(e) => (e.currentTarget.style.borderColor = "#30363d")}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && e.ctrlKey) handleSendComment();
-              }}
-            />
-            <button
-              onClick={handleSendComment}
-              disabled={!newComment.trim() || !connected}
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "none",
-                cursor:
-                  newComment.trim() && connected ? "pointer" : "not-allowed",
-                background:
-                  newComment.trim() && connected ? "#238636" : "#21262d",
-                color: newComment.trim() && connected ? "white" : "#8b949e",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                transition: "all 0.15s",
-              }}
-            >
-              {connected ? "💬 Send Comment" : "⚡ Connecting..."}
-            </button>
-
-            <button
-              onClick={() => navigator.clipboard.writeText(snippet.code)}
-              style={{
-                padding: "6px 14px",
-                background: "#238636",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontSize: "0.8rem",
-                fontWeight: 600,
-              }}
-            >
-              Copy code
-            </button>
-          </div>
+          <CommentList comments={comments} commentsEndRef={commentsEndRef} />
+          <CommentInput
+            newComment={newComment}
+            setNewComment={setNewComment}
+            lineNumber={lineNumber}
+            setLineNumber={setLineNumber}
+            onSend={handleSendComment}
+            disabled={!connected}
+          />
         </div>
       </div>
     </div>
