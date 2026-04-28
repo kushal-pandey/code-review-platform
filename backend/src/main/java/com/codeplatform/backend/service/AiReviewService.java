@@ -8,10 +8,12 @@ import org.springframework.scheduling.annotation.Async;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.codeplatform.backend.model.Comment;
 import com.codeplatform.backend.model.CodeSnippet;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 public class AiReviewService {
 
@@ -34,8 +36,8 @@ public class AiReviewService {
 
     @Async("taskExecutor") // Explicitly link to the executor we named in AsyncConfig
     public void generateReview(Long snippetId, String code, String language) {
-        // LOUD LOG: If you don't see this in your terminal, the method isn't being called!
-        System.out.println("🚀 AI REVIEW THREAD STARTED: " + Thread.currentThread().getName() + " for snippet " + snippetId);
+
+        log.info("🚀 AI REVIEW THREAD STARTED: {} for snippet {}", Thread.currentThread().getName(), snippetId);
 
         String destination = "/topic/snippets/" + snippetId;
 
@@ -62,8 +64,7 @@ public class AiReviewService {
 
             // 4. Make the API Call
             JsonNode response = restTemplate.postForObject(url, requestBody, JsonNode.class);
-            System.out.println("✅ Received response from Gemini API");
-
+            log.info("✅ Received response from Gemini API");
             // 5. Extract text
             String aiResponseText = extractTextFromGeminiResponse(response);
 
@@ -77,15 +78,14 @@ public class AiReviewService {
             aiComment.setSender("🤖 CodeBot");
 
             com.codeplatform.backend.model.Comment savedComment = commentRepository.save(aiComment);
-            System.out.println("💾 AI Review saved to DB with ID: " + savedComment.getId());
-
+            log.info("💾 AI Review saved to DB with ID: {}", savedComment.getId());
 
             // 💾 AI Review saved to DB with ID: savedComment.getId()
             // 6. Push the ACTUAL database entity to the WebSocket
             messagingTemplate.convertAndSend(destination, savedComment);
 
         } catch (Exception e) {
-            System.err.println("🔥 AI Review Failed on Thread: " + e.getMessage());
+            log.error("🔥 AI Review Failed on Thread: {}", e.getMessage(), e);
             messagingTemplate.convertAndSend(destination,
                     Map.of("sender", "🤖 CodeBot", "content", "⚠️ Sorry, my AI circuits encountered an error. Status: " + e.getMessage(), "isAi", true));
         }
