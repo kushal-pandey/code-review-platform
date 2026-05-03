@@ -25,6 +25,9 @@ public class AiReviewService {
     @Value("${gemini.api.key}")
     private String apiKey;
 
+    @Value("${gemini.api.url}") // Add this field
+    private String apiUrl;
+
     public AiReviewService(SimpMessagingTemplate messagingTemplate,
                            com.codeplatform.backend.repository.SnippetRepository snippetRepository,
                            com.codeplatform.backend.repository.CommentRepository commentRepository) {
@@ -54,7 +57,7 @@ public class AiReviewService {
                     "Keep your response concise and formatted in Markdown.\n\n" + code;
 
             // 3. Prepare the HTTP request (Using the April 2026 confirmed model)
-            String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+            String url = apiUrl + "?key=" + apiKey;
 
             Map<String, Object> requestBody = Map.of(
                     "contents", List.of(
