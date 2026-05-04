@@ -120,6 +120,40 @@ export default function SnippetView() {
     }
   };
 
+  // PASTE THIS RIGHT BELOW handleDelete AND ABOVE if (!snippet)
+  const handleExportMarkdown = () => {
+    // 1. Find all comments that are from the AI
+    const aiComments = comments.filter(
+      (c) => c.isAi && !c.content.includes("Analyzing"),
+    );
+
+    if (aiComments.length === 0) {
+      alert("No AI reviews available to export yet!");
+      return;
+    }
+
+    // 2. Combine all AI reviews into a single Markdown string
+    const reviewText = aiComments.map((c) => c.content).join("\n\n---\n\n");
+
+    // 3. Create the downloadable file
+    const blob = new Blob([reviewText], {
+      type: "text/markdown;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+
+    const fileName = snippet?.title
+      ? `${snippet.title.replace(/\s+/g, "-").toLowerCase()}-review.md`
+      : "code-review.md";
+
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   if (!snippet)
     return (
       <div style={{ color: "white", textAlign: "center", marginTop: 100 }}>
@@ -165,6 +199,39 @@ export default function SnippetView() {
             borderLeft: "1px solid #30363d",
           }}
         >
+          {/* NEW EXPORT HEADER START */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "12px 16px",
+              borderBottom: "1px solid #30363d",
+            }}
+          >
+            <span
+              style={{ color: "white", fontSize: "14px", fontWeight: "600" }}
+            >
+              Discussions
+            </span>
+            <button
+              onClick={handleExportMarkdown}
+              style={{
+                background: "#238636", // GitHub green button
+                color: "white",
+                border: "none",
+                padding: "4px 12px",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "12px",
+                fontWeight: "500",
+              }}
+            >
+              ↓ Export .md
+            </button>
+          </div>
+          {/* NEW EXPORT HEADER END */}
+
           <CommentList comments={comments} commentsEndRef={commentsEndRef} />
           <CommentInput
             newComment={newComment}
