@@ -35,6 +35,14 @@ export default function Dashboard() {
   const mySnippets = snippets.filter(
     (s) => s.author.username === user?.username,
   );
+  const [searchQuery, setSearchQuery] = useState("");
+  const filteredSnippets = snippets.filter((snippet) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      snippet.title?.toLowerCase().includes(query) ||
+      snippet.language?.toLowerCase().includes(query)
+    );
+  });
 
   useEffect(() => {
     // 1. Add /api to the auth call
@@ -56,7 +64,6 @@ export default function Dashboard() {
     localStorage.removeItem("token");
     navigate("/login");
   };
-
 
   const handleSelectAll = () => {
     if (selectedIds.length === mySnippets.length) {
@@ -214,6 +221,30 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* --- NEW: Search Bar UI --- */}
+        <div style={{ marginBottom: "20px" }}>
+          <input
+            type="text"
+            placeholder="🔍 Search snippets by title or language..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px 14px",
+              backgroundColor: "#0d1117",
+              color: "#c9d1d9",
+              border: "1px solid #30363d",
+              borderRadius: "6px",
+              fontSize: "14px",
+              outline: "none",
+              boxSizing: "border-box", // Prevents input from overflowing the container
+            }}
+            onFocus={(e) => (e.target.style.borderColor = "#58a6ff")}
+            onBlur={(e) => (e.target.style.borderColor = "#30363d")}
+          />
+        </div>
+        {/* -------------------------- */}
+
         {snippets.length === 0 && (
           <div
             style={{
@@ -230,7 +261,17 @@ export default function Dashboard() {
           </div>
         )}
 
-        {snippets.map((snippet) => (
+        {/* NEW: Show this if they search for something that doesn't exist */}
+        {snippets.length > 0 && filteredSnippets.length === 0 && (
+          <div
+            style={{ color: "#8b949e", textAlign: "center", padding: "40px" }}
+          >
+            No snippets found matching "{searchQuery}"
+          </div>
+        )}
+
+        {/* CHANGED: map over filteredSnippets instead of snippets */}
+        {filteredSnippets.map((snippet) => (
           <div
             key={snippet.id}
             onClick={() => navigate(`/snippet/${snippet.id}`)}
