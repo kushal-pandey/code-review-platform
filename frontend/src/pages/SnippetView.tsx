@@ -23,6 +23,7 @@ export default function SnippetView() {
   const [isRequestingAi, setIsRequestingAi] = useState(false);
   const stompClientRef = useRef<Client | null>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
+  const [viewerCount, setViewerCount] = useState<number>(1);
 
   // Keep your useEffects and Handlers (Logic) here for now
   useEffect(() => {
@@ -64,6 +65,10 @@ export default function SnippetView() {
           if (comment.isAi && !comment.content.includes("Analyzing")) {
             setIsRequestingAi(false);
           }
+        });
+
+        client.subscribe(`/topic/snippets/${id}/presence`, (msg) => {
+          setViewerCount(parseInt(msg.body, 10));
         });
       },
       onDisconnect: () => setConnected(false),
@@ -180,7 +185,41 @@ export default function SnippetView() {
       />
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        <div style={{ flex: 1 }}>
+        {/* WE ADDED FLEX COLUMN HERE SO THE EDITOR DOESN'T OVERFLOW */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          {/* NEW PRESENCE BADGE START */}
+          <div
+            style={{
+              padding: "8px 16px",
+              background: "#161b22",
+              borderBottom: "1px solid #30363d",
+              display: "flex",
+              justifyContent: "flex-end",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "12px",
+                color: "#8b949e",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <div
+                style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50%",
+                  background: "#238636",
+                }}
+              ></div>
+              {viewerCount} {viewerCount === 1 ? "person" : "people"} viewing
+              right now
+            </span>
+          </div>
+          {/* NEW PRESENCE BADGE END */}
+
           <Editor
             height="100%"
             language={snippet.language}
