@@ -1,13 +1,14 @@
-import ReactMarkdown from "react-markdown";
 // If types.ts is in the src folder
 import type { Comment } from "../types";
 
 export default function CommentList({
   comments,
   commentsEndRef,
+  renderMessageContent,
 }: {
   comments: Comment[];
   commentsEndRef: any;
+  renderMessageContent: (content: string) => React.ReactNode; // <-- 2. Add the type here
 }) {
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
@@ -49,14 +50,14 @@ export default function CommentList({
               fontSize: "0.875rem",
               color: "#c9d1d9",
               lineHeight: 1.5,
-              maxWidth: "100%", 
-              overflowX: "auto", 
-              wordBreak: "break-word", 
+              maxWidth: "100%",
+              overflowX: "auto",
+              wordBreak: "break-word",
               overflowWrap: "anywhere",
             }}
           >
             {comment.isAi ? (
-              <ReactMarkdown>{comment.content}</ReactMarkdown>
+              renderMessageContent(comment.content)
             ) : (
               <p>{comment.content}</p>
             )}

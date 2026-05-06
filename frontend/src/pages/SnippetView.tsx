@@ -24,6 +24,7 @@ export default function SnippetView() {
   const stompClientRef = useRef<Client | null>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const [viewerCount, setViewerCount] = useState<number>(1);
+  const [editorCode, setEditorCode] = useState<string>("");
 
   // Keep your useEffects and Handlers (Logic) here for now
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function SnippetView() {
         setCurrentUser(userRes.data);
         setSnippet(snippetRes.data);
         setComments(snippetRes.data.comments || []);
+        setEditorCode(snippetRes.data.code);
       } catch (err) {
         console.error("Initialization failed:", err);
         navigate("/login");
@@ -159,6 +161,93 @@ export default function SnippetView() {
     URL.revokeObjectURL(url);
   };
 
+  const renderMessageContent = (content: string) => {
+    // Split the message by Markdown code blocks
+    const parts = content.split(/(```[\s\S]*?```)/g);
+
+    return parts.map((part, index) => {
+      // If the part is a code block, render our custom UI
+      if (part.startsWith("```") && part.endsWith("```")) {
+        const lines = part.split("\n");
+        const language = lines[0].replace("```", "").trim();
+        // Extract the actual code without the backticks
+        const actualCode = lines.slice(1, -1).join("\n");
+
+        return (
+          <div
+            key={index}
+            style={{
+              margin: "12px 0",
+              borderRadius: "6px",
+              overflow: "hidden",
+              border: "1px solid #30363d",
+            }}
+          >
+            {/* Code Block Header with the Magic Button */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: "#161b22",
+                padding: "6px 12px",
+                borderBottom: "1px solid #30363d",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "12px",
+                  color: "#8b949e",
+                  fontFamily: "monospace",
+                }}
+              >
+                {language || "code"}
+              </span>
+              <button
+                onClick={() => setEditorCode(actualCode)} // <-- THE MAGIC HAPPENS HERE
+                style={{
+                  background: "#238636",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  padding: "4px 10px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                ⚡ Apply Fix
+              </button>
+            </div>
+            {/* The Code Itself */}
+            <pre
+              style={{
+                margin: 0,
+                padding: "12px",
+                background: "#0d1117",
+                overflowX: "auto",
+                fontSize: "13px",
+                color: "#e6edf3",
+              }}
+            >
+              <code>{actualCode}</code>
+            </pre>
+          </div>
+        );
+      }
+
+      // If it's just normal text, render it as standard Markdown text
+      return (
+        <span key={index} style={{ whiteSpace: "pre-wrap" }}>
+          {part}
+        </span>
+      );
+    });
+  };
+
   if (!snippet)
     return (
       <div style={{ color: "white", textAlign: "center", marginTop: 100 }}>
@@ -223,7 +312,7 @@ export default function SnippetView() {
           <Editor
             height="100%"
             language={snippet.language}
-            value={snippet.code}
+            value={editorCode}
             theme="vs-dark"
             options={{ readOnly: true }}
           />
@@ -271,7 +360,11 @@ export default function SnippetView() {
           </div>
           {/* NEW EXPORT HEADER END */}
 
-          <CommentList comments={comments} commentsEndRef={commentsEndRef} />
+          <CommentList 
+            comments={comments} 
+            commentsEndRef={commentsEndRef} 
+            renderMessageContent={renderMessageContent} // <-- Pass the parser down!
+          />
           <CommentInput
             newComment={newComment}
             setNewComment={setNewComment}
