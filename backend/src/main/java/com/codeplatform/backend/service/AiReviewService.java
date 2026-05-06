@@ -25,6 +25,9 @@ public class AiReviewService {
     @Value("${gemini.api.key}")
     private String apiKey;
 
+    @Value("${groq.api.key}")
+    private String groqApiKey;
+
     @Value("${gemini.api.url}") // Add this field
     private String apiUrl;
 
@@ -66,10 +69,22 @@ public class AiReviewService {
             );
 
             // 4. Make the API Call
-            JsonNode response = restTemplate.postForObject(url, requestBody, JsonNode.class);
-            log.info("✅ Received response from Gemini API");
-            // 5. Extract text
-            String aiResponseText = extractTextFromGeminiResponse(response);
+            // 4 & 5. Make the API Call with a Circuit Breaker (Fallback)
+            String aiResponseText;
+            try {
+                JsonNode response = restTemplate.postForObject(url, requestBody, JsonNode.class);
+                log.info("✅ Received response from Gemini API");
+                aiResponseText = extractTextFromGeminiResponse(response);
+            } catch (org.springframework.web.client.HttpStatusCodeException e) {
+                // If Gemini is overloaded (503) or rate-limited (429), trigger Groq
+                if (e.getStatusCode().value() == 503 || e.getStatusCode().value() == 429) {
+                    log.warn("⚠️ Gemini overloaded (Status: {}). Firing fallback to Groq...", e.getStatusCode().value());
+                    aiResponseText = callGroqFallback(prompt);
+                } else {
+                    // If it's a different HTTP error (like a 401 Unauthorized), let it fail normally
+                    throw e;
+                }
+            }
 
             CodeSnippet snippet = snippetRepository.findById(snippetId)
                     .orElseThrow(() -> new RuntimeException("Snippet not found"));
@@ -96,12 +111,6 @@ public class AiReviewService {
 
     }
 
-    private String buildPrompt(String code, String language) {
-        return "Act as a Senior Software Engineer. Review the following " + language +
-                " code. Point out any bugs, security issues, and suggest architectural improvements. " +
-                "Keep your response concise and formatted in Markdown.\n\n" + code;
-    }
-
     private String extractTextFromGeminiResponse(JsonNode response) {
         try {
             if (response == null || response.path("candidates").isEmpty()) {
@@ -116,6 +125,63 @@ public class AiReviewService {
                     .asText();
         } catch (Exception e) {
             return "JSON Parsing error: " + e.getMessage();
+        }
+    }
+
+    private String callGroqFallback(String prompt) {
+        String groqUrl = "https://api.groq.com/openai/v1/chat/completions";
+
+        // 1. Get the pre-built entity from our new helper method
+        org.springframework.http.HttpEntity<String> entity = buildGroqRequestEntity(prompt);
+
+        // 2. Make the POST request to Groq
+        JsonNode response = restTemplate.postForObject(groqUrl, entity, JsonNode.class);
+        log.info("✅ Received response from Groq API Fallback");
+
+        return extractTextFromGroqResponse(response);
+    }
+
+    private org.springframework.http.HttpEntity<String> buildGroqRequestEntity(String prompt) {
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(groqApiKey);
+
+        // Safely escape the prompt for JSON injection
+        String safePrompt = prompt.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
+
+        // Groq expects the standard OpenAI payload structure
+        String requestBody = """
+            {
+              "model": "llama3-8b-8192",
+              "messages": [
+                {
+                  "role": "system",
+                  "content": "You are a senior software engineer conducting a code review. Return your suggestions formatted in Markdown with triple backtick code blocks so the user can easily apply them."
+                },
+                {
+                  "role": "user",
+                  "content": "%s"
+                }
+              ]
+            }
+            """.formatted(safePrompt);
+
+        return new org.springframework.http.HttpEntity<>(requestBody, headers);
+    }
+
+    private String extractTextFromGroqResponse(JsonNode response) {
+        try {
+            if (response == null || response.path("choices").isEmpty()) {
+                return "Groq Fallback returned an empty response.";
+            }
+            // Groq uses OpenAI's JSON format: choices[0].message.content
+            return response.path("choices")
+                    .get(0)
+                    .path("message")
+                    .path("content")
+                    .asText();
+        } catch (Exception e) {
+            return "Groq JSON Parsing error: " + e.getMessage();
         }
     }
 }
