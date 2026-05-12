@@ -95,7 +95,7 @@ export default function CreateSnippet() {
               fontWeight: 600,
             }}
           >
-            {loading ? "Publishing..." : "🚀 Publish Snippet"}
+            {loading ? "Publishing..." : "Publish Snippet"}
           </button>
         </div>
       </nav>
