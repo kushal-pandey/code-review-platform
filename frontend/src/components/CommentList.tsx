@@ -20,46 +20,76 @@ export default function CommentList({
             borderRadius: "8px",
             padding: "12px",
             marginBottom: "10px",
+            display: "flex", // Added flex to put DP beside content
+            gap: "12px",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginBottom: "8px",
-            }}
-          >
-            <span
+          {/* 1. Profile Picture Section */}
+          {!comment.isAi && (
+            <img
+              src={comment.author?.avatarUrl || "https://github.com/identicons/jasonlong.png"}
+              alt="avatar"
               style={{
-                fontWeight: 600,
-                color: comment.isAi ? "#a371f7" : "#e6edf3",
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                border: "1px solid #30363d",
+                marginTop: "2px"
+              }}
+            />
+          )}
+          {/* AI Icon Fallback if you want one */}
+          {comment.isAi && (
+            <div style={{ 
+              width: "32px", height: "32px", borderRadius: "50%", 
+              background: "#a371f7", display: "flex", alignItems: "center", 
+              justifyContent: "center", fontSize: "12px", color: "white" 
+            }}>
+              AI
+            </div>
+          )}
+
+          {/* 2. Content Section */}
+          <div style={{ flex: 1 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: "4px",
               }}
             >
-              {comment.isAi ? comment.sender : comment.author?.username}
-            </span>
-            <span style={{ color: "#8b949e", fontSize: "0.7rem" }}>
-              {comment.createdAt
-                ? new Date(comment.createdAt).toLocaleTimeString()
-                : "Just now"}
-            </span>
-          </div>
-          <div
-            className="markdown-content"
-            style={{
-              fontSize: "0.875rem",
-              color: "#c9d1d9",
-              lineHeight: 1.5,
-              maxWidth: "100%",
-              overflowX: "auto",
-              wordBreak: "break-word",
-              overflowWrap: "anywhere",
-            }}
-          >
-            {comment.isAi ? (
-              renderMessageContent(comment.content)
-            ) : (
-              <p>{comment.content}</p>
-            )}
+              <span
+                style={{
+                  fontWeight: 600,
+                  color: comment.isAi ? "#a371f7" : "#e6edf3",
+                }}
+              >
+                {comment.isAi ? comment.sender : comment.author?.username}
+              </span>
+              <span style={{ color: "#8b949e", fontSize: "0.7rem" }}>
+                {comment.createdAt
+                  ? new Date(comment.createdAt).toLocaleTimeString()
+                  : "Just now"}
+              </span>
+            </div>
+            <div
+              className="markdown-content"
+              style={{
+                fontSize: "0.875rem",
+                color: "#c9d1d9",
+                lineHeight: 1.5,
+                maxWidth: "100%",
+                overflowX: "auto",
+                wordBreak: "break-word",
+                overflowWrap: "anywhere",
+              }}
+            >
+              {comment.isAi ? (
+                renderMessageContent(comment.content)
+              ) : (
+                <p style={{ margin: 0 }}>{comment.content}</p>
+              )}
+            </div>
           </div>
         </div>
       ))}
