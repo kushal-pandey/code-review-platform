@@ -26,22 +26,25 @@ public class CommentController {
 
     @MessageMapping("/comment/{snippetId}")
     public void handleComment(@DestinationVariable Long snippetId,
-                              @Payload Map<String, Object> payload,
-                              Principal principal) {
+                              @Payload Map<String, Object> payload) {
 
-        System.out.println("Principal: " + principal.getName());
 
         Long userId = Long.parseLong(payload.get("userId").toString());
         String content = payload.get("content").toString();
         Integer lineNumber = payload.containsKey("lineNumber") && payload.get("lineNumber") != null
                 ? Integer.parseInt(payload.get("lineNumber").toString()) : null;
 
+
         User user = userService.getUserById(userId);
+
+
         Comment comment = commentService.addComment(snippetId, content, lineNumber, user);
-        messagingTemplate.convertAndSend("/topic/snippet/" + snippetId, comment);
+
+
+        messagingTemplate.convertAndSend("/topic/snippets/" + snippetId, comment);
+
 
         String snippetOwnerUsername = comment.getSnippet().getAuthor().getUsername();
-
         if (!snippetOwnerUsername.equals(user.getUsername())) {
             notificationService.sendToUser(
                     snippetOwnerUsername,
