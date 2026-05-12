@@ -115,7 +115,7 @@ export default function Dashboard() {
         }}
       >
         <h2 style={{ margin: 0, color: "#58a6ff", letterSpacing: "-0.5px" }}>
-          🔍 CodeReview
+          CodeReview
         </h2>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           {user && (
@@ -163,7 +163,7 @@ export default function Dashboard() {
         </div>
       </nav>
 
-      {/* Content */}
+      
       <div
         style={{ maxWidth: "860px", margin: "32px auto", padding: "0 24px" }}
       >
@@ -179,7 +179,7 @@ export default function Dashboard() {
             {snippets.length} code snippet{snippets.length !== 1 ? "s" : ""}
           </h3>
 
-          {/* Only show bulk actions if the user actually has snippets they own */}
+          
           {mySnippets.length > 0 && (
             <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
               <button
@@ -221,11 +221,11 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* --- NEW: Search Bar UI --- */}
+        
         <div style={{ marginBottom: "20px" }}>
           <input
             type="text"
-            placeholder="🔍 Search snippets by title or language..."
+            placeholder="Search snippets by title or language..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -243,7 +243,7 @@ export default function Dashboard() {
             onBlur={(e) => (e.target.style.borderColor = "#30363d")}
           />
         </div>
-        {/* -------------------------- */}
+        
 
         {snippets.length === 0 && (
           <div
@@ -256,12 +256,11 @@ export default function Dashboard() {
               color: "#8b949e",
             }}
           >
-            <div style={{ fontSize: "3rem", marginBottom: "12px" }}>📝</div>
             <p>No snippets yet. Post the first one!</p>
           </div>
         )}
 
-        {/* NEW: Show this if they search for something that doesn't exist */}
+        
         {snippets.length > 0 && filteredSnippets.length === 0 && (
           <div
             style={{ color: "#8b949e", textAlign: "center", padding: "40px" }}
@@ -270,7 +269,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* CHANGED: map over filteredSnippets instead of snippets */}
+        
         {filteredSnippets.map((snippet) => (
           <div
             key={snippet.id}
@@ -303,7 +302,7 @@ export default function Dashboard() {
               <div
                 style={{ display: "flex", alignItems: "center", gap: "12px" }}
               >
-                {/* Checkbox: Only visible if the logged-in user owns this snippet */}
+                
                 {user?.username === snippet.author.username && (
                   <input
                     type="checkbox"
@@ -318,7 +317,7 @@ export default function Dashboard() {
                           : [...prev, snippet.id],
                       );
                     }}
-                    // 2. Keep onClick just to stop the card from opening
+                    
                     onClick={(e) => e.stopPropagation()}
                     style={{
                       cursor: "pointer",
@@ -333,7 +332,6 @@ export default function Dashboard() {
                 </h4>
               </div>
 
-              {/* Your existing language tag span goes right here... */}
               <span
                 style={{
                   background: LANG_COLORS[snippet.language] || "#6e7681",
@@ -375,7 +373,7 @@ export default function Dashboard() {
                 })}
               </span>
               <span>•</span>
-              <span>💬 {snippet.comments?.length || 0} comments</span>
+              <span>{snippet.comments?.length || 0} comments</span>
             </div>
           </div>
         ))}

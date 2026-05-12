@@ -4,9 +4,6 @@ import Editor from "@monaco-editor/react";
 import { Client } from "@stomp/stompjs";
 import api from "../api/axios";
 import SockJS from "sockjs-client/dist/sockjs";
-// ✅ This tells TypeScript these are JUST types
-
-// Import your new components
 import SnippetHeader from "../components/SnippetHeader";
 import CommentList from "../components/CommentList";
 import CommentInput from "../components/CommentInput";
@@ -26,11 +23,9 @@ export default function SnippetView() {
   const [viewerCount, setViewerCount] = useState<number>(1);
   const [editorCode, setEditorCode] = useState<string>("");
 
-  // Keep your useEffects and Handlers (Logic) here for now
   useEffect(() => {
     const initializePage = async () => {
       try {
-        // 🚀 This fires both requests at the exact same time
         const [userRes, snippetRes] = await Promise.all([
           api.get("/api/auth/me"),
           api.get(`/api/snippets/${id}`),
@@ -54,7 +49,7 @@ export default function SnippetView() {
       webSocketFactory: () =>
         new SockJS(`${import.meta.env.VITE_WS_URL}/ws`) as WebSocket,
       onConnect: () => {
-        setConnected(true); // ✅ This removes the yellow underline!
+        setConnected(true); 
         client.subscribe(`/topic/snippets/${id}`, (msg) => {
           const comment = JSON.parse(msg.body);
           setComments((prev) => {
@@ -129,7 +124,6 @@ export default function SnippetView() {
 
   // PASTE THIS RIGHT BELOW handleDelete AND ABOVE if (!snippet)
   const handleExportMarkdown = () => {
-    // 1. Find all comments that are from the AI
     const aiComments = comments.filter(
       (c) => c.isAi && !c.content.includes("Analyzing"),
     );

@@ -1,4 +1,3 @@
-// If types.ts is in the src folder
 import type { Comment } from "../types";
 
 export default function CommentList({
@@ -8,7 +7,7 @@ export default function CommentList({
 }: {
   comments: Comment[];
   commentsEndRef: any;
-  renderMessageContent: (content: string) => React.ReactNode; // <-- 2. Add the type here
+  renderMessageContent: (content: string) => React.ReactNode; 
 }) {
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>

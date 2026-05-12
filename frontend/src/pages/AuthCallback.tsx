@@ -12,10 +12,9 @@ export default function AuthCallback() {
       localStorage.setItem("token", token);
       console.log("Token found! Saving...");
 
-      // Use a tiny timeout to ensure localStorage is written
-      // before the navigation kicks in
+      
       setTimeout(() => {
-        window.location.replace("/"); // Force a hard reload to the dashboard
+        window.location.replace("/"); 
       }, 300);
     } else {
       console.error("No token found in URL!");

@@ -24,18 +24,16 @@ export default function CreateSnippet() {
   const navigate = useNavigate();
 
   const handleSubmit = async () => {
-    
     if (!title.trim() || !code.trim()) {
       alert("Please fill in the title and code.");
       return;
     }
     setLoading(true);
     try {
-      // Add the /api prefix here to match your Backend @RequestMapping
       const res = await api.post("/api/snippets", { title, code, language });
       navigate(`/snippet/${res.data.id}`);
     } catch (err) {
-      console.error("Publishing error details:", err); // Log the actual error for debugging
+      console.error("Publishing error details:", err);
       alert("Error publishing snippet. Please try again.");
       setLoading(false);
     }
@@ -63,10 +61,15 @@ export default function CreateSnippet() {
         }}
       >
         <h2
-          style={{ margin: 0, color: "#58a6ff", cursor: "pointer" }}
+          style={{
+            margin: 0,
+            color: "#58a6ff",
+            cursor: "pointer",
+            fontWeight: 700,
+          }}
           onClick={() => navigate("/")}
         >
-          🔍 CodeReview
+          CodeReview
         </h2>
         <div style={{ display: "flex", gap: "10px" }}>
           <button
