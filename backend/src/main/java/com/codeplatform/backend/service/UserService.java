@@ -11,7 +11,8 @@ import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
-public class UserService {
+public class
+UserService {
 
     private final UserRepository userRepository;
 
