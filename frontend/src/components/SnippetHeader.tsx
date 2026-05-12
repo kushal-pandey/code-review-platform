@@ -64,6 +64,7 @@ export default function SnippetHeader({
               padding: "4px 12px",
               borderRadius: "6px",
               transition: "0.2s ease",
+              cursor: "pointer", 
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "rgba(248, 81, 73, 0.1)";
@@ -78,12 +79,12 @@ export default function SnippetHeader({
         <span
           style={{
             background: "#21262d",
-            color: "#58a6ff", 
+            color: "#58a6ff",
             padding: "4px 12px",
             borderRadius: "20px",
             fontSize: "0.75rem",
             fontWeight: 600,
-            border: "1px solid #30363d", 
+            border: "1px solid #30363d",
             textTransform: "uppercase",
             letterSpacing: "0.5px",
           }}
