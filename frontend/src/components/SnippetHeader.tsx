@@ -1,4 +1,5 @@
 import type { User, Snippet } from "../types";
+import { useNavigate } from "react-router-dom"; 
 
 interface Props {
   snippet: Snippet;
@@ -17,6 +18,9 @@ export default function SnippetHeader({
   onAskAi,
   onDelete,
 }: Props) {
+
+  const navigate = useNavigate();
+
   return (
     <nav
       style={{
@@ -29,16 +33,35 @@ export default function SnippetHeader({
         borderBottom: "1px solid #30363d",
       }}
     >
-      <div>
-        <span style={{ color: "#e6edf3", fontWeight: 600 }}>
-          {snippet.title}
-        </span>
-        <span
-          style={{ color: "#8b949e", fontSize: "0.8rem", display: "block" }}
+      {/* LEFT SECTION: Restored the Logo alongside the Title */}
+      <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+        <h2
+          onClick={() => navigate("/")}
+          style={{
+            margin: 0,
+            color: "#58a6ff",
+            cursor: "pointer",
+            fontSize: "1.2rem",
+            fontWeight: 700,
+            letterSpacing: "-0.5px",
+          }}
         >
-          by {snippet.author?.username}
-        </span>
+          CodeReview
+        </h2>
+
+        {/* Vertical divider to separate Logo from Snippet Title */}
+        <div style={{ width: "1px", height: "24px", background: "#30363d" }} />
+
+        <div>
+          <span style={{ color: "#e6edf3", fontWeight: 600, display: "block" }}>
+            {snippet.title}
+          </span>
+          <span style={{ color: "#8b949e", fontSize: "0.8rem" }}>
+            by {snippet.author?.username}
+          </span>
+        </div>
       </div>
+
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         <button
           onClick={onAskAi}
@@ -54,6 +77,7 @@ export default function SnippetHeader({
         >
           {isRequestingAi ? "Waking AI..." : "Ask AI to Review"}
         </button>
+
         {currentUser?.id === snippet.author?.id && (
           <button
             onClick={onDelete}
@@ -76,6 +100,7 @@ export default function SnippetHeader({
             Delete
           </button>
         )}
+
         <span
           style={{
             background: "#21262d",
@@ -91,6 +116,7 @@ export default function SnippetHeader({
         >
           {snippet.language}
         </span>
+
         <span
           style={{
             width: 8,

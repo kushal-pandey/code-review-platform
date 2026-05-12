@@ -122,7 +122,6 @@ export default function SnippetView() {
     }
   };
 
-  // PASTE THIS RIGHT BELOW handleDelete AND ABOVE if (!snippet)
   const handleExportMarkdown = () => {
     const aiComments = comments.filter(
       (c) => c.isAi && !c.content.includes("Analyzing"),
