@@ -41,7 +41,7 @@ export default function CommentList({
               }}
             />
           )}
-          {/* AI Icon Fallback if you want one */}
+          
           {comment.isAi && (
             <div
               style={{
@@ -54,6 +54,7 @@ export default function CommentList({
                 justifyContent: "center",
                 fontSize: "12px",
                 color: "white",
+                flexShrink: 0, 
               }}
             >
               AI
@@ -89,8 +90,8 @@ export default function CommentList({
                 fontSize: "0.875rem",
                 color: "#c9d1d9",
                 lineHeight: 1.5,
-                maxWidth: "280px", 
-                overflowX: "hidden", 
+                maxWidth: "280px",
+                overflowX: "hidden",
                 wordBreak: "break-word",
                 overflowWrap: "break-word",
               }}
