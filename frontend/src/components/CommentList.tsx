@@ -11,7 +11,7 @@ export default function CommentList({
 }) {
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
-      {comments.map((comment, index) => (
+      {[...comments].reverse().map((comment, index) => (
         <div
           key={comment.id || `ai-${index}`}
           style={{
@@ -41,7 +41,7 @@ export default function CommentList({
               }}
             />
           )}
-          
+
           {comment.isAi && (
             <div
               style={{
@@ -54,7 +54,7 @@ export default function CommentList({
                 justifyContent: "center",
                 fontSize: "12px",
                 color: "white",
-                flexShrink: 0, 
+                flexShrink: 0,
               }}
             >
               AI
@@ -62,7 +62,9 @@ export default function CommentList({
           )}
 
           {/* 2. Content Section */}
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {" "}
+            {/* 👈 ADDED minWidth: 0 HERE */}
             <div
               style={{
                 display: "flex",
@@ -90,10 +92,10 @@ export default function CommentList({
                 fontSize: "0.875rem",
                 color: "#c9d1d9",
                 lineHeight: 1.5,
-                maxWidth: "280px",
-                overflowX: "hidden",
                 wordBreak: "break-word",
                 overflowWrap: "break-word",
+                width: "100%", 
+                boxSizing: "border-box", 
               }}
             >
               {comment.isAi ? (

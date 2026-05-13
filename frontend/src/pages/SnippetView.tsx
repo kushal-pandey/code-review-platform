@@ -52,13 +52,41 @@ export default function SnippetView() {
         setConnected(true);
         client.subscribe(`/topic/snippets/${id}`, (msg) => {
           const comment = JSON.parse(msg.body);
+
           setComments((prev) => {
-            if (comment.id && prev.some((c) => c.id === comment.id))
+            let updatedComments = prev;
+            const isPlaceholder =
+              comment.isAi && comment.content.includes("Analyzing");
+            const isRealReview =
+              comment.isAi && !comment.content.includes("Analyzing");
+
+            // 1. If it's a real review, clear out the Analyzing placeholders
+            if (isRealReview) {
+              updatedComments = prev.filter(
+                (c) => !(c.isAi && c.content.includes("Analyzing")),
+              );
+            }
+
+            // 2. NEW: If it's a placeholder, but we ALREADY have one, ignore it
+            if (
+              isPlaceholder &&
+              prev.some((c) => c.isAi && c.content.includes("Analyzing"))
+            ) {
               return prev;
-            if (!comment.id && prev.some((c) => c.content === comment.content))
-              return prev;
-            return [...prev, comment];
+            }
+
+            // 3. Standard deduplication
+            if (comment.id && updatedComments.some((c) => c.id === comment.id))
+              return updatedComments;
+            if (
+              !comment.id &&
+              updatedComments.some((c) => c.content === comment.content)
+            )
+              return updatedComments;
+
+            return [...updatedComments, comment];
           });
+
           if (comment.isAi && !comment.content.includes("Analyzing")) {
             setIsRequestingAi(false);
           }
@@ -152,6 +180,32 @@ export default function SnippetView() {
     URL.revokeObjectURL(url);
   };
 
+  const formatMarkdown = (rawText: string) => {
+    let safeText = rawText
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    return safeText
+      .replace(
+        /^### (.*$)/gim,
+        '<h3 style="margin: 0 0 8px 0; font-size: 14px; color: #ffffff;">$1</h3>',
+      )
+      .replace(
+        /^#### (.*$)/gim,
+        '<h4 style="margin: 0 0 8px 0; font-size: 13px; color: #e6edf3;">$1</h4>',
+      )
+      .replace(/\*\*(.*?)\*\*/g, '<strong style="color: #ffffff;">$1</strong>')
+      .replace(
+        /`([^`\n]+)`/g,
+        '<code style="background: rgba(110, 118, 129, 0.4); padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 12px; color: #e6edf3;">$1</code>',
+      )
+      .replace(
+        /^\* (.*$)/gim,
+        '<div style="display: flex; gap: 8px;"><span style="color: #a371f7;">•</span><span>$1</span></div>',
+      );
+  };
+
   const renderMessageContent = (content: string) => {
     const parts = content.split(/(```[\s\S]*?```)/g);
 
@@ -161,30 +215,34 @@ export default function SnippetView() {
         const language = lines[0].replace("```", "").trim();
         const actualCode = lines.slice(1, -1).join("\n");
 
-        
         return (
           <div
             key={index}
             style={{
               margin: "12px 0",
               borderRadius: "6px",
-              overflow: "hidden", 
+              overflow: "hidden",
               border: "1px solid #30363d",
-              width: "100%", 
+              width: "100%",
+              boxSizing: "border-box", 
             }}
           >
             <div
-              style={
-                {
-                  /* ... your existing header style ... */
-                }
-              }
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: "#161b22",
+                padding: "8px 12px",
+                borderBottom: "1px solid #30363d",
+              }}
             >
               <span
                 style={{
-                  fontSize: "12px",
+                  fontSize: "11px",
                   color: "#8b949e",
                   fontFamily: "monospace",
+                  textTransform: "uppercase",
                 }}
               >
                 {language || "code"}
@@ -194,11 +252,19 @@ export default function SnippetView() {
                   setEditorCode(actualCode);
                   console.log("Code Applied!");
                 }}
-                style={
-                  {
-                    /* ... your green button style ... */
-                  }
-                }
+                style={{
+                  background: "rgba(35, 134, 54, 0.2)",
+                  color: "#3fb950",
+                  border: "1px solid rgba(63, 185, 80, 0.4)",
+                  borderRadius: "6px",
+                  padding: "4px 10px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
               >
                 ⚡ Apply Fix
               </button>
@@ -208,7 +274,7 @@ export default function SnippetView() {
                 margin: 0,
                 padding: "12px",
                 background: "#0d1117",
-                overflowX: "auto", 
+                overflowX: "auto",
                 fontSize: "12px",
                 color: "#e6edf3",
                 maxWidth: "100%",
@@ -220,10 +286,21 @@ export default function SnippetView() {
         );
       }
 
+      // REPLACE IT WITH THIS NEW VERSION
       return (
-        <span key={index} style={{ whiteSpace: "pre-wrap" }}>
-          {part}
-        </span>
+        <div
+          key={index}
+          style={{
+            whiteSpace: "pre-wrap",
+            marginBottom: "12px",
+            lineHeight: "1.6",
+            wordBreak: "break-word",
+            overflowWrap: "break-word",
+            width: "100%",
+            boxSizing: "border-box",
+          }}
+          dangerouslySetInnerHTML={{ __html: formatMarkdown(part.trim()) }}
+        />
       );
     });
   };
@@ -343,7 +420,7 @@ export default function SnippetView() {
           <CommentList
             comments={comments}
             commentsEndRef={commentsEndRef}
-            renderMessageContent={renderMessageContent} // <-- Pass the parser down!
+            renderMessageContent={renderMessageContent}
           />
           <CommentInput
             newComment={newComment}
