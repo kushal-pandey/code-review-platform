@@ -40,7 +40,7 @@ public class SecurityConfig {
                 )
                 // 2. Independent Authorization Block
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/","/oauth2/**", "/login/**", "/ws/**", "/api/auth/**", "/api/reviews/**").permitAll()
+                        .requestMatchers("/","/oauth2/**", "/login/**", "/ws/**", "/api/auth/**", "/api/reviews/**", "/api/health").permitAll()
                         .anyRequest().authenticated()
                 )
                 // 3. OAuth2 Login Block
