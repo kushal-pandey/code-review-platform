@@ -49,7 +49,7 @@ export default function SnippetView() {
       webSocketFactory: () =>
         new SockJS(`${import.meta.env.VITE_WS_URL}/ws`) as WebSocket,
       onConnect: () => {
-        setConnected(true); 
+        setConnected(true);
         client.subscribe(`/topic/snippets/${id}`, (msg) => {
           const comment = JSON.parse(msg.body);
           setComments((prev) => {
@@ -132,10 +132,8 @@ export default function SnippetView() {
       return;
     }
 
-    // 2. Combine all AI reviews into a single Markdown string
     const reviewText = aiComments.map((c) => c.content).join("\n\n---\n\n");
 
-    // 3. Create the downloadable file
     const blob = new Blob([reviewText], {
       type: "text/markdown;charset=utf-8",
     });
@@ -155,37 +153,32 @@ export default function SnippetView() {
   };
 
   const renderMessageContent = (content: string) => {
-    // Split the message by Markdown code blocks
     const parts = content.split(/(```[\s\S]*?```)/g);
 
     return parts.map((part, index) => {
-      // If the part is a code block, render our custom UI
       if (part.startsWith("```") && part.endsWith("```")) {
         const lines = part.split("\n");
         const language = lines[0].replace("```", "").trim();
-        // Extract the actual code without the backticks
         const actualCode = lines.slice(1, -1).join("\n");
 
+        
         return (
           <div
             key={index}
             style={{
               margin: "12px 0",
               borderRadius: "6px",
-              overflow: "hidden",
+              overflow: "hidden", 
               border: "1px solid #30363d",
+              width: "100%", 
             }}
           >
-            {/* Code Block Header with the Magic Button */}
             <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                background: "#161b22",
-                padding: "6px 12px",
-                borderBottom: "1px solid #30363d",
-              }}
+              style={
+                {
+                  /* ... your existing header style ... */
+                }
+              }
             >
               <span
                 style={{
@@ -197,33 +190,28 @@ export default function SnippetView() {
                 {language || "code"}
               </span>
               <button
-                onClick={() => setEditorCode(actualCode)} // <-- THE MAGIC HAPPENS HERE
-                style={{
-                  background: "#238636",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  padding: "4px 10px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
+                onClick={() => {
+                  setEditorCode(actualCode);
+                  console.log("Code Applied!");
                 }}
+                style={
+                  {
+                    /* ... your green button style ... */
+                  }
+                }
               >
                 ⚡ Apply Fix
               </button>
             </div>
-            {/* The Code Itself */}
             <pre
               style={{
                 margin: 0,
                 padding: "12px",
                 background: "#0d1117",
-                overflowX: "auto",
-                fontSize: "13px",
+                overflowX: "auto", 
+                fontSize: "12px",
                 color: "#e6edf3",
+                maxWidth: "100%",
               }}
             >
               <code>{actualCode}</code>
@@ -232,7 +220,6 @@ export default function SnippetView() {
         );
       }
 
-      // If it's just normal text, render it as standard Markdown text
       return (
         <span key={index} style={{ whiteSpace: "pre-wrap" }}>
           {part}
@@ -353,9 +340,9 @@ export default function SnippetView() {
           </div>
           {/* NEW EXPORT HEADER END */}
 
-          <CommentList 
-            comments={comments} 
-            commentsEndRef={commentsEndRef} 
+          <CommentList
+            comments={comments}
+            commentsEndRef={commentsEndRef}
             renderMessageContent={renderMessageContent} // <-- Pass the parser down!
           />
           <CommentInput

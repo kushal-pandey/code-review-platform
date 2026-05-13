@@ -28,7 +28,7 @@ public class AiReviewService {
     @Value("${groq.api.key}")
     private String groqApiKey;
 
-    @Value("${gemini.api.url}") // Add this field
+    @Value("${gemini.api.url}")
     private String apiUrl;
 
     public AiReviewService(SimpMessagingTemplate messagingTemplate,
@@ -40,7 +40,7 @@ public class AiReviewService {
         this.restTemplate = new RestTemplate();
     }
 
-    @Async("taskExecutor") // Explicitly link to the executor we named in AsyncConfig
+    @Async("taskExecutor")
     public void generateReview(Long snippetId, String code, String language) {
 
         log.info("🚀 AI REVIEW THREAD STARTED: {} for snippet {}", Thread.currentThread().getName(), snippetId);
@@ -50,16 +50,13 @@ public class AiReviewService {
         try {
 
             Thread.sleep(500);
-            // 1. Instantly notify the WebSocket that the AI is typing...
             messagingTemplate.convertAndSend(destination,
                     Map.of("sender", "🤖 CodeBot", "content", "✨ Analyzing your code...", "isAi", true));
 
-            // 2. Build the prompt
             String prompt = "Act as a Senior Software Engineer. Review the following " + language +
                     " code. Point out any bugs, security issues, and suggest architectural improvements. " +
                     "Keep your response concise and formatted in Markdown.\n\n" + code;
 
-            // 3. Prepare the HTTP request (Using the April 2026 confirmed model)
             String url = apiUrl + "?key=" + apiKey;
 
             Map<String, Object> requestBody = Map.of(
@@ -68,20 +65,17 @@ public class AiReviewService {
                     )
             );
 
-            // 4. Make the API Call
-            // 4 & 5. Make the API Call with a Circuit Breaker (Fallback)
+
             String aiResponseText;
             try {
                 JsonNode response = restTemplate.postForObject(url, requestBody, JsonNode.class);
                 log.info("✅ Received response from Gemini API");
                 aiResponseText = extractTextFromGeminiResponse(response);
             } catch (org.springframework.web.client.HttpStatusCodeException e) {
-                // If Gemini is overloaded (503) or rate-limited (429), trigger Groq
                 if (e.getStatusCode().value() == 503 || e.getStatusCode().value() == 429) {
                     log.warn("⚠️ Gemini overloaded (Status: {}). Firing fallback to Groq...", e.getStatusCode().value());
                     aiResponseText = callGroqFallback(prompt);
                 } else {
-                    // If it's a different HTTP error (like a 401 Unauthorized), let it fail normally
                     throw e;
                 }
             }
@@ -98,8 +92,7 @@ public class AiReviewService {
             com.codeplatform.backend.model.Comment savedComment = commentRepository.save(aiComment);
             log.info("💾 AI Review saved to DB with ID: {}", savedComment.getId());
 
-            // 💾 AI Review saved to DB with ID: savedComment.getId()
-            // 6. Push the ACTUAL database entity to the WebSocket
+
             messagingTemplate.convertAndSend(destination, savedComment);
 
         } catch (Exception e) {
@@ -131,10 +124,8 @@ public class AiReviewService {
     private String callGroqFallback(String prompt) {
         String groqUrl = "https://api.groq.com/openai/v1/chat/completions";
 
-        // 1. Get the pre-built entity from our new helper method
         org.springframework.http.HttpEntity<String> entity = buildGroqRequestEntity(prompt);
 
-        // 2. Make the POST request to Groq
         JsonNode response = restTemplate.postForObject(groqUrl, entity, JsonNode.class);
         log.info("✅ Received response from Groq API Fallback");
 
@@ -146,13 +137,11 @@ public class AiReviewService {
         headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
         headers.setBearerAuth(groqApiKey);
 
-        // Safely escape the prompt for JSON injection
         String safePrompt = prompt.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
 
-        // Groq expects the standard OpenAI payload structure
         String requestBody = """
             {
-              "model": "llama3-8b-8192",
+              "model": "llama-3.1-8b-instant",
               "messages": [
                 {
                   "role": "system",

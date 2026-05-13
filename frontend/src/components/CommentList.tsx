@@ -7,7 +7,7 @@ export default function CommentList({
 }: {
   comments: Comment[];
   commentsEndRef: any;
-  renderMessageContent: (content: string) => React.ReactNode; 
+  renderMessageContent: (content: string) => React.ReactNode;
 }) {
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
@@ -27,24 +27,35 @@ export default function CommentList({
           {/* 1. Profile Picture Section */}
           {!comment.isAi && (
             <img
-              src={comment.author?.avatarUrl || "https://github.com/identicons/jasonlong.png"}
+              src={
+                comment.author?.avatarUrl ||
+                "https://github.com/identicons/jasonlong.png"
+              }
               alt="avatar"
               style={{
                 width: "32px",
                 height: "32px",
                 borderRadius: "50%",
                 border: "1px solid #30363d",
-                marginTop: "2px"
+                marginTop: "2px",
               }}
             />
           )}
           {/* AI Icon Fallback if you want one */}
           {comment.isAi && (
-            <div style={{ 
-              width: "32px", height: "32px", borderRadius: "50%", 
-              background: "#a371f7", display: "flex", alignItems: "center", 
-              justifyContent: "center", fontSize: "12px", color: "white" 
-            }}>
+            <div
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                background: "#a371f7",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "12px",
+                color: "white",
+              }}
+            >
               AI
             </div>
           )}
@@ -78,16 +89,18 @@ export default function CommentList({
                 fontSize: "0.875rem",
                 color: "#c9d1d9",
                 lineHeight: 1.5,
-                maxWidth: "100%",
-                overflowX: "auto",
+                maxWidth: "280px", 
+                overflowX: "hidden", 
                 wordBreak: "break-word",
-                overflowWrap: "anywhere",
+                overflowWrap: "break-word",
               }}
             >
               {comment.isAi ? (
                 renderMessageContent(comment.content)
               ) : (
-                <p style={{ margin: 0 }}>{comment.content}</p>
+                <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
+                  {comment.content}
+                </p>
               )}
             </div>
           </div>
