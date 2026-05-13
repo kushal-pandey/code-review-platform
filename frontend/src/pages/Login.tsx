@@ -1,16 +1,10 @@
+import { BACKEND_URL } from "../config"; 
+
 export default function Login() {
   const handleLogin = () => {
-    // If the URL in the browser bar isn't localhost, we are in production
-    const isProduction = window.location.hostname !== "localhost";
-
-    // Use Render for production, Localhost for dev
-    // REPLACE the URL below with your actual Render backend URL
-    const backendUrl = isProduction
-      ? "https://codereview-backend-4fp2.onrender.com"
-      : import.meta.env.VITE_API_URL || "http://localhost:8080";
-
-    console.log("Redirecting to Backend Auth:", backendUrl);
-    window.location.href = `${backendUrl}/oauth2/authorization/github`;
+    
+    console.log("Redirecting to Backend Auth:", BACKEND_URL);
+    window.location.href = `${BACKEND_URL}/oauth2/authorization/github`;
   };
 
   return (
@@ -59,7 +53,7 @@ export default function Login() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: "12px", // Space between icon and text
+            gap: "12px", 
           }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#2ea043")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "#238636")}

@@ -1,13 +1,8 @@
 import axios from 'axios'
-
-// Determine if we are on Vercel or Localhost
-const isProduction = window.location.hostname !== "localhost";
-const baseURL = isProduction 
-  ? "https://codereview-backend-4fp2.onrender.com" // Your exact Render URL
-  : (import.meta.env.VITE_API_URL || "http://localhost:8080");
+import { BACKEND_URL } from '../config'; 
 
 const api = axios.create({
-  baseURL,
+  baseURL: BACKEND_URL ,
 })
 
 api.interceptors.request.use((config) => {
@@ -25,8 +20,7 @@ api.interceptors.response.use(
 
     const isAuthPath = window.location.pathname.includes('/auth/callback');
     
-    // Check if it's a 401. 
-    // IMPORTANT: Re-enable the redirect logic once you've updated the baseURL above
+   
     if (error.response?.status === 401 && !isAuthPath) {
        localStorage.removeItem('token'); 
        window.location.href = '/login';   
