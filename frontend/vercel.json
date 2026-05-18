@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://codereview-backend-4fp2.onrender.com/api/$1" },
+    { "source": "/api/(.*)", "destination": "https://code-review-platform.onrender.com/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
