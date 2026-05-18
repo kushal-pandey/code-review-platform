@@ -239,9 +239,26 @@ app:
 
 server:
   port: 8080
+
+gemini:
+  api:
+    key: ${GEMINI_API_KEY}
+    url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent"
+
+groq:
+  api:
+    key: ${GROQ_API_KEY}
 ```
 
-### 5. Start the backend
+
+
+### 5. AI Integration
+
+Visit https://aistudio.google.com/apps. Click get api key then create api key. Copy the key and paste it in Intellij environment variables. To add an environment variable, click on the three dots icon near the run button, then click Edit and add your api keys. Do this for all keys inside application.yaml 
+
+
+
+### 6. Start the backend
 
 Open the `backend/` folder in IntelliJ IDEA and run `BackendApplication.java`, or:
 
@@ -252,7 +269,7 @@ cd backend
 
 Backend starts on `http://localhost:8080`
 
-### 6. Start the frontend
+### 7. Start the frontend
 
 ```bash
 cd frontend
@@ -262,7 +279,7 @@ npm run dev
 
 Frontend starts on `http://localhost:5173`
 
-### 7. Open the app
+### 8. Open the app
 
 Visit `http://localhost:5173` and sign in with GitHub.
 
@@ -273,7 +290,7 @@ Visit `http://localhost:5173` and sign in with GitHub.
 | Service | Platform | URL |
 |---|---|---|
 | Frontend | Vercel | `code-review-platform-brown.vercel.app` |
-| Backend | Render (Docker) | `codereview-backend-4fp2.onrender.com` |
+| Backend | Render (Docker) | `code-review-platform.onrender.com` |
 | Database | Render PostgreSQL | Internal connection |
 
 ### Environment Variables (Render)
