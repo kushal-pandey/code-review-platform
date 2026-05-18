@@ -3,7 +3,7 @@
 > A production-grade, real-time collaborative code review platform — built with Java Spring Boot, WebSocket, and React.
 
 **Live Demo → [code-review-platform-brown.vercel.app](https://code-review-platform-brown.vercel.app)**  
-**Backend API → [codereview-backend-4fp2.onrender.com](https://codereview-backend-4fp2.onrender.com)**
+**Backend API → [code-review-platform.onrender.com](https://code-review-platform.onrender.com)**
 
 ---
 
