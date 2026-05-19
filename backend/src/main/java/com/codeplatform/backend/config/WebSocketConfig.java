@@ -25,7 +25,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Value("${RABBITMQ_PASS:local_dev_pass}")
     private String relayPass;
 
-    @Value("${spring.rabbitmq.virtual-host:/}")
+    @Value("${RABBITMQ_VIRTUAL_HOST:/}")
     private String relayVhost;
 
     @Override
