@@ -82,7 +82,24 @@ export default function CommentList({
               </span>
               <span style={{ color: "#8b949e", fontSize: "0.7rem" }}>
                 {comment.createdAt
-                  ? new Date(comment.createdAt).toLocaleTimeString()
+                  ? (() => {
+
+                      const timePart = comment.createdAt.includes("T")
+                        ? comment.createdAt.split("T")[1]
+                        : comment.createdAt.split(" ")[1];
+
+                      if (!timePart) return comment.createdAt; 
+
+                      const [hoursStr, minutesStr] = timePart.split(":");
+                      let hours = parseInt(hoursStr, 10);
+                      const minutes = minutesStr;
+                      const ampm = hours >= 12 ? "PM" : "AM";
+
+                      hours = hours % 12;
+                      hours = hours ? hours : 12; // The hour '0' should be '12'
+
+                      return `${hours}:${minutes} ${ampm}`;
+                    })()
                   : "Just now"}
               </span>
             </div>
@@ -94,8 +111,8 @@ export default function CommentList({
                 lineHeight: 1.5,
                 wordBreak: "break-word",
                 overflowWrap: "break-word",
-                width: "100%", 
-                boxSizing: "border-box", 
+                width: "100%",
+                boxSizing: "border-box",
               }}
             >
               {comment.isAi ? (
