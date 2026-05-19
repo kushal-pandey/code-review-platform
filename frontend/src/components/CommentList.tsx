@@ -1,16 +1,29 @@
+import { useEffect, useRef } from "react";
 import type { Comment } from "../types";
 
 export default function CommentList({
   comments,
-  commentsEndRef,
   renderMessageContent,
 }: {
   comments: Comment[];
-  commentsEndRef: any;
   renderMessageContent: (content: string) => React.ReactNode;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({
+        top: 0,
+        behavior: "smooth", 
+      });
+    }
+  }, [comments.length]); 
+
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
+    <div 
+      ref={containerRef}
+      style={{ flex: 1, overflowY: "auto", padding: "12px" }}
+    >
       {[...comments].reverse().map((comment, index) => (
         <div
           key={comment.id || `ai-${index}`}
@@ -20,11 +33,11 @@ export default function CommentList({
             borderRadius: "8px",
             padding: "12px",
             marginBottom: "10px",
-            display: "flex", // Added flex to put DP beside content
+            display: "flex", 
             gap: "12px",
           }}
         >
-          {/* 1. Profile Picture Section */}
+          {/* Profile Picture Section */}
           {!comment.isAi && (
             <img
               src={
@@ -61,10 +74,8 @@ export default function CommentList({
             </div>
           )}
 
-          {/* 2. Content Section */}
+          {/* Content Section */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            {" "}
-            {/* 👈 ADDED minWidth: 0 HERE */}
             <div
               style={{
                 display: "flex",
@@ -83,21 +94,20 @@ export default function CommentList({
               <span style={{ color: "#8b949e", fontSize: "0.7rem" }}>
                 {comment.createdAt
                   ? (() => {
-
-                      const timePart = comment.createdAt.includes("T")
-                        ? comment.createdAt.split("T")[1]
+                      const timePart = comment.createdAt.includes("T") 
+                        ? comment.createdAt.split("T")[1] 
                         : comment.createdAt.split(" ")[1];
-
-                      if (!timePart) return comment.createdAt; 
+                        
+                      if (!timePart) return comment.createdAt;
 
                       const [hoursStr, minutesStr] = timePart.split(":");
                       let hours = parseInt(hoursStr, 10);
                       const minutes = minutesStr;
                       const ampm = hours >= 12 ? "PM" : "AM";
-
+                      
                       hours = hours % 12;
-                      hours = hours ? hours : 12; // The hour '0' should be '12'
-
+                      hours = hours ? hours : 12;
+                      
                       return `${hours}:${minutes} ${ampm}`;
                     })()
                   : "Just now"}
@@ -111,8 +121,8 @@ export default function CommentList({
                 lineHeight: 1.5,
                 wordBreak: "break-word",
                 overflowWrap: "break-word",
-                width: "100%",
-                boxSizing: "border-box",
+                width: "100%", 
+                boxSizing: "border-box", 
               }}
             >
               {comment.isAi ? (
@@ -126,7 +136,6 @@ export default function CommentList({
           </div>
         </div>
       ))}
-      <div ref={commentsEndRef} />
     </div>
   );
 }

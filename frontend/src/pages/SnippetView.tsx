@@ -419,7 +419,6 @@ export default function SnippetView() {
 
           <CommentList
             comments={comments}
-            commentsEndRef={commentsEndRef}
             renderMessageContent={renderMessageContent}
           />
           <CommentInput
