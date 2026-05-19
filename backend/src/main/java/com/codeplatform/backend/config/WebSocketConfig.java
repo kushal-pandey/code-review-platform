@@ -11,34 +11,9 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    @Value("${spring.rabbitmq.host:localhost}")
-    private String relayHost;
-
-    @Value("${spring.rabbitmq.port:61613}")
-    private int relayPort;
-
-    // Replaced your real username with a generic placeholder
-    @Value("${RABBITMQ_USER:local_dev_user}")
-    private String relayUser;
-
-    // Replaced your real password with a generic placeholder
-    @Value("${RABBITMQ_PASS:local_dev_pass}")
-    private String relayPass;
-
-    @Value("${RABBITMQ_VIRTUAL_HOST:/}")
-    private String relayVhost;
-
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableStompBrokerRelay("/topic", "/queue")
-                .setRelayHost(relayHost)
-                .setRelayPort(relayPort)
-                .setClientLogin(relayUser)
-                .setClientPasscode(relayPass)
-                .setSystemLogin(relayUser)
-                .setSystemPasscode(relayPass)
-                .setVirtualHost(relayVhost);
-
+        config.enableSimpleBroker("/topic", "/queue");
         config.setApplicationDestinationPrefixes("/app");
         config.setUserDestinationPrefix("/user");
     }
