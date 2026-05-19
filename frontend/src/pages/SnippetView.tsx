@@ -19,7 +19,6 @@ export default function SnippetView() {
   const [connected, setConnected] = useState(false);
   const [isRequestingAi, setIsRequestingAi] = useState(false);
   const stompClientRef = useRef<Client | null>(null);
-  const commentsEndRef = useRef<HTMLDivElement>(null);
   const [viewerCount, setViewerCount] = useState<number>(1);
   const [editorCode, setEditorCode] = useState<string>("");
 
