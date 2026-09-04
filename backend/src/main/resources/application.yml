@@ -39,6 +39,8 @@ gemini:
   api:
     key: ${GEMINI_API_KEY}
     url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent"
+  embedding:
+    url: "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent"
 
 groq:
   api:

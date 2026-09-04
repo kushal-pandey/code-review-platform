@@ -21,6 +21,7 @@ public class AiReviewService {
     private final RestTemplate restTemplate;
     private final com.codeplatform.backend.repository.SnippetRepository snippetRepository;
     private final com.codeplatform.backend.repository.CommentRepository commentRepository;
+    private final RagRetrievalService ragRetrievalService;
 
     @Value("${gemini.api.key}")
     private String apiKey;
@@ -33,10 +34,12 @@ public class AiReviewService {
 
     public AiReviewService(SimpMessagingTemplate messagingTemplate,
                            com.codeplatform.backend.repository.SnippetRepository snippetRepository,
-                           com.codeplatform.backend.repository.CommentRepository commentRepository) {
+                           com.codeplatform.backend.repository.CommentRepository commentRepository,
+                           RagRetrievalService ragRetrievalService) {
         this.messagingTemplate = messagingTemplate;
         this.snippetRepository = snippetRepository;
         this.commentRepository = commentRepository;
+        this.ragRetrievalService = ragRetrievalService;
         this.restTemplate = new RestTemplate();
     }
 
@@ -53,9 +56,10 @@ public class AiReviewService {
             messagingTemplate.convertAndSend(destination,
                     Map.of("sender", "🤖 CodeBot", "content", "✨ Analyzing your code...", "isAi", true));
 
-            String prompt = "Act as a Senior Software Engineer. Review the following " + language +
-                    " code. Point out any bugs, security issues, and suggest architectural improvements. " +
-                    "Keep your response concise and formatted in Markdown.\n\n" + code;
+
+            String similarReviewContext = ragRetrievalService.retrieveSimilarReviewContext(code);
+
+            String prompt = buildPrompt(code, language, similarReviewContext);
 
             String url = apiUrl + "?key=" + apiKey;
 
@@ -64,7 +68,6 @@ public class AiReviewService {
                             Map.of("parts", List.of(Map.of("text", prompt)))
                     )
             );
-
 
             String aiResponseText;
             try {
@@ -92,8 +95,10 @@ public class AiReviewService {
             com.codeplatform.backend.model.Comment savedComment = commentRepository.save(aiComment);
             log.info("💾 AI Review saved to DB with ID: {}", savedComment.getId());
 
-
             messagingTemplate.convertAndSend(destination, savedComment);
+
+
+            ragRetrievalService.storeReviewKnowledge(language, code, aiResponseText);
 
         } catch (Exception e) {
             log.error("🔥 AI Review Failed on Thread: {}", e.getMessage(), e);
@@ -102,6 +107,20 @@ public class AiReviewService {
         }
 
 
+    }
+
+    private String buildPrompt(String code, String language, String similarReviewContext) {
+        String basePrompt = "Act as a Senior Software Engineer. Review the following " + language +
+                " code. Point out any bugs, security issues, and suggest architectural improvements. " +
+                "Keep your response concise and formatted in Markdown.\n\n" + code;
+
+        if (similarReviewContext == null || similarReviewContext.isBlank()) {
+            return basePrompt;
+        }
+
+        return basePrompt + "\n\n" + similarReviewContext +
+                "\nUse this context only to stay consistent with prior feedback style — " +
+                "do not repeat it verbatim, and prioritize issues actually present in this code.";
     }
 
     private String extractTextFromGeminiResponse(JsonNode response) {
@@ -163,7 +182,7 @@ public class AiReviewService {
             if (response == null || response.path("choices").isEmpty()) {
                 return "Groq Fallback returned an empty response.";
             }
-            // Groq uses OpenAI's JSON format: choices[0].message.content
+
             return response.path("choices")
                     .get(0)
                     .path("message")
